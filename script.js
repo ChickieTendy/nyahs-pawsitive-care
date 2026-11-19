@@ -158,6 +158,8 @@ function transferEstimateToRequest() {
       block: "start"
     });
 }
+ window.transferEstimateToRequest =
+  transferEstimateToRequest;
 
 // ===== AVAILABILITY CALCULATOR =====
 
@@ -351,30 +353,20 @@ if (
           ${
             canContinue
               ? `
-                <a
-                  href="#request"
-                  class="button estimate-continue"
-                >
-                  Continue to Request Care
-                </a>
+                <button
+  type="button"
+  class="button estimate-continue"
+  onclick="transferEstimateToRequest()"
+>
+  Continue to Request Care
+</button>
               `
               : ""
           }
         `;
 
         availabilityResult.hidden = false;
-        const continueButton =
-  availabilityResult.querySelector(
-    ".estimate-continue"
-  );
-
-continueButton?.addEventListener(
-  "click",
-  (event) => {
-    event.preventDefault();
-    transferEstimateToRequest();
-  }
-);
+     
       } catch (error) {
         availabilityResult.className =
           "availability-result availability-error";
