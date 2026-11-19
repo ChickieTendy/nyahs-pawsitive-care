@@ -415,9 +415,14 @@
 </section>
     
     <section id="request" class="section request-section">
-      <div class="request-copy"><p class="eyebrow">Request Pet Care</p><h2>Tell Nyah what your pet needs.</h2><p>Complete the form to create a ready-to-send request summary. The website does not store your information. When you tap “Prepare Email,” your device opens an email draft for you to review and send.</p><div class="privacy-callout">🔒 No form data is saved by this website.</div></div>
-      <form id="care-form" novalidate> 
-        <div
+      <div class="request-copy"><p class="eyebrow">Request Pet Care</p><h2>Tell Nyah what your pet needs.</h2><p>
+  Complete the form to submit your care request for Nyah’s
+  review. Your request will be saved as pending and does not
+  become a confirmed reservation until it is approved.
+</p><div class="privacy-callout">
+  🔒 Your information is securely submitted for booking review.
+  Payment-card information is never collected by this form.
+</div>
   id="request-summary"
   class="request-summary"
   hidden
@@ -467,7 +472,7 @@
         <label>Care details<textarea name="details" rows="5" placeholder="Routine, medications, allergies, behavior, compatibility, feeding, and anything else Nyah should know." required></textarea></label>
         <label class="check"><input name="acknowledge" type="checkbox" required><span>I understand this is a request and not a confirmed reservation.</span></label>
         <p id="form-message" class="form-message" aria-live="polite"></p>
-        <button class="button" type="submit">Prepare Email Request</button>
+        <button class="button" type="submit">Submit Care Request</button>
       </form>
     </section>
   </main>
