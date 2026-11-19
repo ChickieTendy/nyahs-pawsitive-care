@@ -1,8 +1,22 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "nyahs-pawsitive-care",
+  "main": "worker.js",
   "compatibility_date": "2026-11-18",
+
   "assets": {
-    "directory": "."
-  }
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*"
+    ]
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nyahs-pawsitive-care-db",
+      "database_id": "b18b209c-7402-4a26-8711-18a3ce6881e4"
+    }
+  ]
 }
