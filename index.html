@@ -416,7 +416,50 @@
     
     <section id="request" class="section request-section">
       <div class="request-copy"><p class="eyebrow">Request Pet Care</p><h2>Tell Nyah what your pet needs.</h2><p>Complete the form to create a ready-to-send request summary. The website does not store your information. When you tap “Prepare Email,” your device opens an email draft for you to review and send.</p><div class="privacy-callout">🔒 No form data is saved by this website.</div></div>
-      <form id="care-form" novalidate>
+      <form id="care-form" novalidate> 
+        <div
+  id="request-summary"
+  class="request-summary"
+  hidden
+>
+  <p class="eyebrow">Your Requested Stay</p>
+
+  <div class="request-summary-grid">
+
+    <div>
+      <span>Service</span>
+      <strong id="summary-service">—</strong>
+    </div>
+
+    <div>
+      <span>Dates</span>
+      <strong id="summary-dates">—</strong>
+    </div>
+
+    <div>
+      <span>Dogs</span>
+      <strong id="summary-dogs">—</strong>
+    </div>
+
+    <div>
+      <span>Stay</span>
+      <strong id="summary-nights">—</strong>
+    </div>
+
+  </div>
+
+  <div class="request-summary-total">
+    <span>Estimated Total</span>
+    <strong id="summary-total">—</strong>
+  </div>
+
+  <p>
+    Final pricing and reservation approval are subject to
+    availability, compatibility, care requirements, and applicable
+    holiday or extended-care charges.
+  </p>
+
+</div>
         <div class="field-row"><label>Your name<input name="ownerName" autocomplete="name" required></label><label>Email<input name="email" type="email" autocomplete="email" required></label></div>
         <div class="field-row"><label>Phone<input name="phone" type="tel" autocomplete="tel" required></label><label>Pet's name<input name="petName" required></label></div>
         <div class="field-row"><label>Service<select name="service" required><option value="">Choose one</option><option>Dog Boarding</option><option>In-Home House Sitting</option></select></label><label>Pet type / breed<input name="petDetails" placeholder="Example: Dog / Labrador mix" required></label></div>
