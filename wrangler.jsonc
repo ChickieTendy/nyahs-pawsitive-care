@@ -18,5 +18,16 @@
       "database_name": "nyahs-pawsitive-care-db",
       "database_id": "b18b209c-7402-4a26-8711-18a3ce6881e4"
     }
+  ],
+
+  "ratelimits": [
+    {
+      "name": "REQUEST_LIMITER",
+      "namespace_id": "20261118",
+      "simple": {
+        "limit": 3,
+        "period": 60
+      }
+    }
   ]
 }
