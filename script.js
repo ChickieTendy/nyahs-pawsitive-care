@@ -303,43 +303,83 @@ document.addEventListener(
       return;
     }
 
+    event.preventDefault();
+
     if (!latestCareEstimate) {
-      event.preventDefault();
       return;
     }
 
     const estimate = latestCareEstimate;
+    const careForm =
+      document.querySelector("#care-form");
 
-    const requestService =
-      document.querySelector(
-        '#care-form select[name="service"]'
-      );
+    if (!careForm) {
+      return;
+    }
 
-    const requestStart =
-      document.querySelector(
-        '#care-form input[name="startDate"]'
-      );
+    /*
+     * Use the form's named fields directly.
+     */
+    const serviceField =
+      careForm.elements.namedItem("service");
 
-    const requestEnd =
-      document.querySelector(
-        '#care-form input[name="endDate"]'
-      );
+    const startField =
+      careForm.elements.namedItem("startDate");
 
-    if (requestService) {
-      requestService.value =
+    const endField =
+      careForm.elements.namedItem("endDate");
+
+    /*
+     * Explicitly populate the real form fields.
+     */
+    if (serviceField) {
+      serviceField.value =
         estimate.serviceName;
+
+      serviceField.dispatchEvent(
+        new Event("change", {
+          bubbles: true
+        })
+      );
     }
 
-    if (requestStart) {
-      requestStart.value =
+    if (startField) {
+      startField.value =
         estimate.startDate;
+
+      startField.dispatchEvent(
+        new Event("input", {
+          bubbles: true
+        })
+      );
+
+      startField.dispatchEvent(
+        new Event("change", {
+          bubbles: true
+        })
+      );
     }
 
-    if (requestEnd) {
-      requestEnd.value =
+    if (endField) {
+      endField.value =
         estimate.endDate;
+
+      endField.dispatchEvent(
+        new Event("input", {
+          bubbles: true
+        })
+      );
+
+      endField.dispatchEvent(
+        new Event("change", {
+          bubbles: true
+        })
+      );
     }
 
+    /*
+     * Fill the visible request summary.
+     */
     const summary =
       document.querySelector(
         "#request-summary"
@@ -409,6 +449,16 @@ document.addEventListener(
     if (summary) {
       summary.hidden = false;
     }
+
+    /*
+     * Only scroll after all fields have been filled.
+     */
+    document
+      .querySelector("#request")
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
   }
 );
 
