@@ -11,6 +11,7 @@
   "/api/*",
   "/auth/*"
 ]
+},
   "d1_databases": [
     {
       "binding": "DB",
