@@ -684,6 +684,125 @@ export default {
         405
       );
     }
+
+    /*
+ * AUTH CHECKPOINT 1
+ * Create and store a hashed magic-login token.
+ * Email delivery is added after this passes.
+ */
+if (
+  url.pathname === "/api/auth/request-link" &&
+  request.method === "POST"
+) {
+  try {
+    const body = await request.json();
+
+    const email =
+      typeof body.email === "string"
+        ? body.email
+            .trim()
+            .toLowerCase()
+            .slice(0, 200)
+        : "";
+
+    if (
+      !email ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error: "Enter a valid email address."
+        },
+        400
+      );
+    }
+
+    const account =
+      await env.DB
+        .prepare(`
+          SELECT
+            id,
+            email,
+            status
+          FROM customer_accounts
+          WHERE email = ?1
+          LIMIT 1
+        `)
+        .bind(email)
+        .first();
+
+    if (
+      !account ||
+      account.status !== "active"
+    ) {
+      return jsonResponse({
+        ok: true,
+        message:
+          "If that account is eligible for sign-in, check the inbox."
+      });
+    }
+
+    const rawToken =
+      createSecureToken();
+
+    const tokenHash =
+      await sha256Hex(rawToken);
+
+    const expiresAt =
+      new Date(
+        Date.now() + (15 * 60 * 1000)
+      ).toISOString();
+
+    await env.DB
+      .prepare(`
+        DELETE FROM auth_tokens
+        WHERE account_id = ?1
+          AND purpose = ?2
+          AND used_at IS NULL
+      `)
+      .bind(
+        account.id,
+        "magic_login"
+      )
+      .run();
+
+    await env.DB
+      .prepare(`
+        INSERT INTO auth_tokens (
+          account_id,
+          token_hash,
+          purpose,
+          expires_at
+        )
+        VALUES (?1, ?2, ?3, ?4)
+      `)
+      .bind(
+        account.id,
+        tokenHash,
+        "magic_login",
+        expiresAt
+      )
+      .run();
+
+    return jsonResponse({
+      ok: true,
+      message:
+        "Authentication token created.",
+      checkpoint: "token-stored"
+    });
+
+  } catch (error) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Unable to create the authentication token."
+      },
+      500
+    );
+  }
+}
     
     return env.ASSETS.fetch(request);
   }
