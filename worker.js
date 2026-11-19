@@ -652,7 +652,118 @@ export default {
         405
       );
     }
+/*
+ * Temporary Resend connection test.
+ * Remove after authentication email is verified.
+ */
+if (
+  url.pathname === "/api/test-email" &&
+  request.method === "POST"
+) {
+  try {
+    const body = await request.json();
 
+    const email =
+      typeof body.email === "string"
+        ? body.email.trim().toLowerCase()
+        : "";
+
+    if (
+      !email ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error: "Enter a valid email."
+        },
+        400
+      );
+    }
+
+    const resendResponse = await fetch(
+      "https://api.resend.com/emails",
+      {
+        method: "POST",
+
+        headers: {
+          "Authorization":
+            `Bearer ${env.RESEND_API_KEY}`,
+
+          "Content-Type":
+            "application/json",
+
+          "User-Agent":
+            "nyahs-pawsitive-care/1.0"
+        },
+
+        body: JSON.stringify({
+          from:
+            "Nyah's Pawsitive Care <login@accounts.nyahspawsitivecare.com>",
+
+          to: [email],
+
+          subject:
+            "Nyah's Pawsitive Care email test",
+
+          html: `
+            <div
+              style="
+                font-family:Arial,sans-serif;
+                max-width:560px;
+                margin:auto;
+                padding:30px;
+                color:#241b30;
+              "
+            >
+              <h1 style="color:#7b4ce2;">
+                Nyah's Pawsitive Care
+              </h1>
+
+              <p>
+                Your customer account email connection is working.
+              </p>
+
+              <p>
+                This is only a setup test. No account was created.
+              </p>
+            </div>
+          `
+        })
+      }
+    );
+
+    const resendData =
+      await resendResponse.json();
+
+    if (!resendResponse.ok) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            resendData?.message ||
+            "Resend rejected the email."
+        },
+        resendResponse.status
+      );
+    }
+
+    return jsonResponse({
+      ok: true,
+      message: "Test email sent."
+    });
+
+  } catch (error) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Unable to send the test email."
+      },
+      500
+    );
+  }
+}
     if (url.pathname.startsWith("/api/")) {
       return jsonResponse(
         {
