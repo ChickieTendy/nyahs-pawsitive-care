@@ -56,6 +56,108 @@ function formatDate(dateString) {
 
 let latestCareEstimate = null;
 
+function transferEstimateToRequest() {
+  if (!latestCareEstimate) {
+    return;
+  }
+
+  const estimate = latestCareEstimate;
+  const careForm =
+    document.querySelector("#care-form");
+
+  if (!careForm) {
+    return;
+  }
+
+  const serviceField =
+    careForm.elements["service"];
+
+  const startField =
+    careForm.elements["startDate"];
+
+  const endField =
+    careForm.elements["endDate"];
+
+  if (serviceField) {
+    serviceField.value =
+      estimate.serviceName;
+  }
+
+  if (startField) {
+    startField.value =
+      estimate.startDate;
+  }
+
+  if (endField) {
+    endField.value =
+      estimate.endDate;
+  }
+
+  const summary =
+    document.querySelector("#request-summary");
+
+  const summaryService =
+    document.querySelector("#summary-service");
+
+  const summaryDates =
+    document.querySelector("#summary-dates");
+
+  const summaryDogs =
+    document.querySelector("#summary-dogs");
+
+  const summaryNights =
+    document.querySelector("#summary-nights");
+
+  const summaryTotal =
+    document.querySelector("#summary-total");
+
+  if (summaryService) {
+    summaryService.textContent =
+      estimate.serviceName;
+  }
+
+  if (summaryDates) {
+    summaryDates.textContent =
+      `${formatDate(estimate.startDate)} – ` +
+      `${formatDate(estimate.endDate)}`;
+  }
+
+  if (summaryDogs) {
+    summaryDogs.textContent =
+      `${estimate.dogCount} ${
+        estimate.dogCount === 1
+          ? "dog"
+          : "dogs"
+      }`;
+  }
+
+  if (summaryNights) {
+    summaryNights.textContent =
+      `${estimate.nights} ${
+        estimate.nights === 1
+          ? "night"
+          : "nights"
+      }`;
+  }
+
+  if (summaryTotal) {
+    summaryTotal.textContent =
+      moneyFormatter.format(
+        estimate.estimatedTotal
+      );
+  }
+
+  if (summary) {
+    summary.hidden = false;
+  }
+
+  document
+    .querySelector("#request")
+    ?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+}
 
 // ===== AVAILABILITY CALCULATOR =====
 
@@ -261,6 +363,18 @@ if (
         `;
 
         availabilityResult.hidden = false;
+        const continueButton =
+  availabilityResult.querySelector(
+    ".estimate-continue"
+  );
+
+continueButton?.addEventListener(
+  "click",
+  (event) => {
+    event.preventDefault();
+    transferEstimateToRequest();
+  }
+);
       } catch (error) {
         availabilityResult.className =
           "availability-result availability-error";
@@ -290,178 +404,6 @@ if (
   );
 }
 
-
-// ===== TRANSFER ESTIMATE TO REQUEST FORM =====
-
-document.addEventListener(
-  "click",
-  (event) => {
-    const continueButton =
-      event.target.closest(".estimate-continue");
-
-    if (!continueButton) {
-      return;
-    }
-
-    event.preventDefault();
-
-    if (!latestCareEstimate) {
-  availabilityForm?.requestSubmit();
-  return;
-}
-
-    const estimate = latestCareEstimate;
-    const careForm =
-      document.querySelector("#care-form");
-
-    if (!careForm) {
-      return;
-    }
-
-    /*
-     * Use the form's named fields directly.
-     */
-    const serviceField =
-      careForm.elements.namedItem("service");
-
-    const startField =
-      careForm.elements.namedItem("startDate");
-
-    const endField =
-      careForm.elements.namedItem("endDate");
-
-    /*
-     * Explicitly populate the real form fields.
-     */
-    if (serviceField) {
-      serviceField.value =
-        estimate.serviceName;
-
-      serviceField.dispatchEvent(
-        new Event("change", {
-          bubbles: true
-        })
-      );
-    }
-
-    if (startField) {
-      startField.value =
-        estimate.startDate;
-
-      startField.dispatchEvent(
-        new Event("input", {
-          bubbles: true
-        })
-      );
-
-      startField.dispatchEvent(
-        new Event("change", {
-          bubbles: true
-        })
-      );
-    }
-
-    if (endField) {
-      endField.value =
-        estimate.endDate;
-
-      endField.dispatchEvent(
-        new Event("input", {
-          bubbles: true
-        })
-      );
-
-      endField.dispatchEvent(
-        new Event("change", {
-          bubbles: true
-        })
-      );
-    }
-
-    /*
-     * Fill the visible request summary.
-     */
-    const summary =
-      document.querySelector(
-        "#request-summary"
-      );
-
-    const summaryService =
-      document.querySelector(
-        "#summary-service"
-      );
-
-    const summaryDates =
-      document.querySelector(
-        "#summary-dates"
-      );
-
-    const summaryDogs =
-      document.querySelector(
-        "#summary-dogs"
-      );
-
-    const summaryNights =
-      document.querySelector(
-        "#summary-nights"
-      );
-
-    const summaryTotal =
-      document.querySelector(
-        "#summary-total"
-      );
-
-    if (summaryService) {
-      summaryService.textContent =
-        estimate.serviceName;
-    }
-
-    if (summaryDates) {
-      summaryDates.textContent =
-        `${formatDate(estimate.startDate)} – ` +
-        `${formatDate(estimate.endDate)}`;
-    }
-
-    if (summaryDogs) {
-      summaryDogs.textContent =
-        `${estimate.dogCount} ${
-          estimate.dogCount === 1
-            ? "dog"
-            : "dogs"
-        }`;
-    }
-
-    if (summaryNights) {
-      summaryNights.textContent =
-        `${estimate.nights} ${
-          estimate.nights === 1
-            ? "night"
-            : "nights"
-        }`;
-    }
-
-    if (summaryTotal) {
-      summaryTotal.textContent =
-        moneyFormatter.format(
-          estimate.estimatedTotal
-        );
-    }
-
-    if (summary) {
-      summary.hidden = false;
-    }
-
-    /*
-     * Only scroll after all fields have been filled.
-     */
-    document
-      .querySelector("#request")
-      ?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-  }
-);
 
 
 // ===== SUBMIT REQUEST TO D1 =====
