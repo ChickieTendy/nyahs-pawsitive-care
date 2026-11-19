@@ -785,12 +785,132 @@ if (
       )
       .run();
 
-    return jsonResponse({
-      ok: true,
-      message:
-        "Authentication token created.",
-      checkpoint: "token-stored"
-    });
+    const magicUrl =
+  new URL(
+    "/auth/verify",
+    "https://nyahspawsitivecare.com"
+  );
+
+magicUrl.searchParams.set(
+  "token",
+  rawToken
+);
+
+const resendResponse =
+  await fetch(
+    "https://api.resend.com/emails",
+    {
+      method: "POST",
+
+      headers: {
+        "Authorization":
+          `Bearer ${env.RESEND_API_KEY}`,
+
+        "Content-Type":
+          "application/json",
+
+        "User-Agent":
+          "nyahs-pawsitive-care/1.0"
+      },
+
+      body: JSON.stringify({
+        from:
+          "Nyah's Pawsitive Care <login@accounts.nyahspawsitivecare.com>",
+
+        to: [account.email],
+
+        subject:
+          "Sign in to Nyah's Pawsitive Care",
+
+        html: `
+          <div
+            style="
+              font-family:Arial,sans-serif;
+              max-width:560px;
+              margin:auto;
+              padding:32px;
+              color:#241b30;
+            "
+          >
+
+            <h1
+              style="
+                color:#7b4ce2;
+                margin-bottom:16px;
+              "
+            >
+              Nyah's Pawsitive Care
+            </h1>
+
+            <p>
+              Use the button below to securely
+              sign in to your customer account.
+            </p>
+
+            <p style="margin:28px 0;">
+              <a
+                href="${magicUrl.toString()}"
+                style="
+                  display:inline-block;
+                  padding:14px 22px;
+                  background:#7b4ce2;
+                  color:#ffffff;
+                  text-decoration:none;
+                  border-radius:10px;
+                  font-weight:bold;
+                "
+              >
+                Sign In
+              </a>
+            </p>
+
+            <p>
+              This link expires in 15 minutes
+              and can only be used once.
+            </p>
+
+            <p
+              style="
+                color:#766b82;
+                font-size:13px;
+                margin-top:26px;
+              "
+            >
+              If you did not request this sign-in
+              link, you can safely ignore this email.
+            </p>
+
+          </div>
+        `
+      })
+    }
+  );
+
+if (!resendResponse.ok) {
+  await env.DB
+    .prepare(`
+      DELETE FROM auth_tokens
+      WHERE token_hash = ?1
+    `)
+    .bind(tokenHash)
+    .run();
+
+  return jsonResponse(
+    {
+      ok: false,
+      error:
+        "Unable to send the sign-in email."
+    },
+    502
+  );
+}
+
+return jsonResponse({
+  ok: true,
+  message:
+    "Check your email for your secure sign-in link.",
+  checkpoint: "email-sent"
+});
 
   } catch (error) {
     return jsonResponse(
