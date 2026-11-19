@@ -933,6 +933,8 @@ return jsonResponse({
       500
     );
   }
+  }
+    
   /*
  * Verify a passwordless magic link
  * and create a customer session.
@@ -1150,9 +1152,7 @@ if (
       }
     );
   }
-}
-}
-    
+}   
     return env.ASSETS.fetch(request);
   }
 };
