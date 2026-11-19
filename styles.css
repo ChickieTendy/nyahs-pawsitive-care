@@ -435,49 +435,65 @@
   }
 }
 
-/* ===== DESKTOP LAYOUT CORRECTION ===== */
+/* ===== FINAL DESKTOP WIDTH FIX ===== */
 
-@media (min-width: 801px) {
+@media screen and (min-width: 801px) {
+
+  .services-section {
+    width: 100%;
+    max-width: none;
+  }
 
   .services-section > .eyebrow,
   .services-section > h2,
   .services-section > .service-grid,
   .services-section > .pricing-info-grid,
   .services-section > .booking-policy {
-    width: min(1180px, calc(100% - 44px));
-    max-width: 1180px;
-    margin-left: auto;
-    margin-right: auto;
+    width: calc(100% - 44px) !important;
+    max-width: 1180px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box;
   }
 
-  .service-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
+  .services-section > .service-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 24px;
   }
 
   .service-card {
     width: 100%;
     min-width: 0;
+    padding: 32px;
   }
 
   .mini-rate-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px;
   }
 
   .mini-rate {
+    width: 100%;
     min-width: 0;
   }
 
+  .mini-rate strong,
   .mini-rate span,
-  .mini-rate strong {
-    overflow-wrap: anywhere;
+  .mini-rate small {
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   .pyrce-notice {
     width: 100%;
+    box-sizing: border-box;
   }
 
   .pricing-info-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 16px;
   }
 }
