@@ -147,6 +147,17 @@ function createSecureToken() {
     .join("");
 }
 
+function createSessionCookie(rawSession) {
+  return [
+    `__Host-npc_session=${rawSession}`,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+    "Max-Age=604800"
+  ].join("; ");
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -922,6 +933,224 @@ return jsonResponse({
       500
     );
   }
+  /*
+ * Verify a passwordless magic link
+ * and create a customer session.
+ */
+if (
+  url.pathname === "/auth/verify" &&
+  request.method === "GET"
+) {
+  try {
+    const rawToken =
+      url.searchParams.get("token") || "";
+
+    if (
+      rawToken.length < 32 ||
+      rawToken.length > 200
+    ) {
+      return new Response(
+        "This sign-in link is invalid.",
+        {
+          status: 400,
+          headers: {
+            "Content-Type":
+              "text/plain; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    const tokenHash =
+      await sha256Hex(rawToken);
+
+    const token =
+      await env.DB
+        .prepare(`
+          SELECT
+            id,
+            account_id,
+            expires_at,
+            used_at
+          FROM auth_tokens
+          WHERE token_hash = ?1
+            AND purpose = ?2
+          LIMIT 1
+        `)
+        .bind(
+          tokenHash,
+          "magic_login"
+        )
+        .first();
+
+    if (!token) {
+      return new Response(
+        "This sign-in link is invalid or has already been replaced.",
+        {
+          status: 400,
+          headers: {
+            "Content-Type":
+              "text/plain; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    if (token.used_at) {
+      return new Response(
+        "This sign-in link has already been used.",
+        {
+          status: 400,
+          headers: {
+            "Content-Type":
+              "text/plain; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    if (
+      new Date(token.expires_at).getTime() <
+      Date.now()
+    ) {
+      return new Response(
+        "This sign-in link has expired. Please request a new one.",
+        {
+          status: 400,
+          headers: {
+            "Content-Type":
+              "text/plain; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    const account =
+      await env.DB
+        .prepare(`
+          SELECT
+            id,
+            household_id,
+            status
+          FROM customer_accounts
+          WHERE id = ?1
+          LIMIT 1
+        `)
+        .bind(token.account_id)
+        .first();
+
+    if (
+      !account ||
+      account.status !== "active"
+    ) {
+      return new Response(
+        "This customer account is not available.",
+        {
+          status: 403,
+          headers: {
+            "Content-Type":
+              "text/plain; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    const rawSession =
+      createSecureToken();
+
+    const sessionHash =
+      await sha256Hex(rawSession);
+
+    const sessionExpiresAt =
+      new Date(
+        Date.now() +
+        (7 * 24 * 60 * 60 * 1000)
+      ).toISOString();
+
+    await env.DB.batch([
+      env.DB
+        .prepare(`
+          UPDATE auth_tokens
+          SET used_at = CURRENT_TIMESTAMP
+          WHERE id = ?1
+            AND used_at IS NULL
+        `)
+        .bind(token.id),
+
+      env.DB
+        .prepare(`
+          INSERT INTO customer_sessions (
+            account_id,
+            session_hash,
+            expires_at,
+            last_seen_at
+          )
+          VALUES (
+            ?1,
+            ?2,
+            ?3,
+            CURRENT_TIMESTAMP
+          )
+        `)
+        .bind(
+          account.id,
+          sessionHash,
+          sessionExpiresAt
+        ),
+
+      env.DB
+        .prepare(`
+          UPDATE customer_accounts
+          SET
+            email_verified = 1,
+            last_login_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?1
+        `)
+        .bind(account.id)
+    ]);
+
+    const headers =
+      new Headers();
+
+    headers.set(
+      "Location",
+      "/account"
+    );
+
+    headers.append(
+      "Set-Cookie",
+      createSessionCookie(rawSession)
+    );
+
+    headers.set(
+      "Cache-Control",
+      "no-store"
+    );
+
+    return new Response(
+      null,
+      {
+        status: 302,
+        headers
+      }
+    );
+
+  } catch (error) {
+    return new Response(
+      "Unable to complete sign-in right now.",
+      {
+        status: 500,
+        headers: {
+          "Content-Type":
+            "text/plain; charset=utf-8",
+          "Cache-Control":
+            "no-store"
+        }
+      }
+    );
+  }
+}
 }
     
     return env.ASSETS.fetch(request);
