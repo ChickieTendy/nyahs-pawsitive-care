@@ -467,7 +467,14 @@
 </div>
         <div class="field-row"><label>Your name<input name="ownerName" autocomplete="name" required></label><label>Email<input name="email" type="email" autocomplete="email" required></label></div>
         <div class="field-row"><label>Phone<input name="phone" type="tel" autocomplete="tel" required></label><label>Pet's name<input name="petName" required></label></div>
-        <div class="field-row"><label>Service<select name="service" required><option value="">Choose one</option><option>Dog Boarding</option><option>In-Home House Sitting</option></select></label><label>Pet type / breed<input name="petDetails" placeholder="Example: Dog / Labrador mix" required></label></div>
+        <div class="field-row"><label>
+  Service
+  <select name="service" required>
+    <option value="">Choose one</option>
+    <option value="Dog Boarding">Dog Boarding</option>
+    <option value="In-Home House Sitting">In-Home House Sitting</option>
+  </select>
+</label><label>Pet type / breed<input name="petDetails" placeholder="Example: Dog / Labrador mix" required></label></div>
         <div class="field-row"><label>Start date<input name="startDate" type="date" required></label><label>End date<input name="endDate" type="date" required></label></div>
         <label>Care details<textarea name="details" rows="5" placeholder="Routine, medications, allergies, behavior, compatibility, feeding, and anything else Nyah should know." required></textarea></label>
         <label class="check"><input name="acknowledge" type="checkbox" required><span>I understand this is a request and not a confirmed reservation.</span></label>
