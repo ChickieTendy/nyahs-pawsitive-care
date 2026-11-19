@@ -325,6 +325,95 @@
       </div>
     </section>
 
+<section id="availability-checker" class="section availability-section">
+
+  <div class="availability-intro">
+    <p class="eyebrow">Check Availability</p>
+    <h2>Plan your pet’s stay.</h2>
+
+    <p>
+      Choose a service, your requested dates, and the number of dogs
+      to check current availability and receive an estimated price.
+    </p>
+
+    <p class="availability-reminder">
+      Estimates do not guarantee a reservation. New clients must
+      complete a meet and greet, and all requests require approval.
+    </p>
+  </div>
+
+  <form id="availability-form" class="availability-form">
+
+    <div class="availability-field">
+      <label for="availability-service">Service</label>
+
+      <select id="availability-service" required>
+        <option value="">Choose a service</option>
+        <option value="boarding">Dog Boarding</option>
+        <option value="house-sitting">
+          In-Home House Sitting
+        </option>
+      </select>
+    </div>
+
+    <div class="availability-field">
+      <label for="availability-start">Arrival date</label>
+
+      <input
+        id="availability-start"
+        type="date"
+        required
+      >
+    </div>
+
+    <div class="availability-field">
+      <label for="availability-end">Departure date</label>
+
+      <input
+        id="availability-end"
+        type="date"
+        required
+      >
+    </div>
+
+    <div class="availability-field">
+      <label for="availability-dogs">Number of dogs</label>
+
+      <select id="availability-dogs" required>
+        <option value="">Choose</option>
+        <option value="1">1 dog</option>
+        <option value="2">2 dogs</option>
+        <option value="3">3 dogs</option>
+        <option value="4">4 dogs</option>
+      </select>
+    </div>
+
+    <button
+      class="button availability-button"
+      type="submit"
+    >
+      Check Availability &amp; Get Estimate
+    </button>
+
+    <p
+      id="availability-loading"
+      class="availability-loading"
+      hidden
+    >
+      Checking your requested dates…
+    </p>
+
+  </form>
+
+  <div
+    id="availability-result"
+    class="availability-result"
+    hidden
+    aria-live="polite"
+  ></div>
+
+</section>
+    
     <section id="request" class="section request-section">
       <div class="request-copy"><p class="eyebrow">Request Pet Care</p><h2>Tell Nyah what your pet needs.</h2><p>Complete the form to create a ready-to-send request summary. The website does not store your information. When you tap “Prepare Email,” your device opens an email draft for you to review and send.</p><div class="privacy-callout">🔒 No form data is saved by this website.</div></div>
       <form id="care-form" novalidate>
