@@ -684,14 +684,7 @@ export default {
         405
       );
     }
-
-    /*
- * Request a passwordless customer sign-in link.
- */
-if (
-  url.pathname === "/api/auth/request-link" &&
-  request.method === "POST"
-) {
+    
     return env.ASSETS.fetch(request);
   }
 };
