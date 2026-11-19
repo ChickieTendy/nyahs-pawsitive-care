@@ -306,8 +306,9 @@ document.addEventListener(
     event.preventDefault();
 
     if (!latestCareEstimate) {
-      return;
-    }
+  availabilityForm?.requestSubmit();
+  return;
+}
 
     const estimate = latestCareEstimate;
     const careForm =
