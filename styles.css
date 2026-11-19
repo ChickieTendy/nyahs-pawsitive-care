@@ -444,3 +444,209 @@
     margin-right: auto;
   }
 }
+
+/* ===== AVAILABILITY CALCULATOR RESULTS ===== */
+
+.availability-result {
+  margin-top: 24px;
+  padding: 25px;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(141, 99, 255, 0.18),
+      transparent 42%
+    ),
+    linear-gradient(
+      145deg,
+      #17111f,
+      #100d17
+    );
+  border: 1px solid rgba(193, 167, 255, 0.32);
+  border-radius: 22px;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.30),
+    inset 0 0 30px rgba(141, 99, 255, 0.04);
+}
+
+.availability-result h3 {
+  margin: 18px 0;
+  color: #ffffff;
+  font-size: 1.6rem;
+}
+
+
+/* Status */
+
+.availability-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(193, 167, 255, 0.20);
+  border-radius: 999px;
+  color: #ffffff;
+}
+
+.availability-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #63d98b;
+  box-shadow: 0 0 14px rgba(99, 217, 139, 0.55);
+}
+
+.availability-limited .availability-dot {
+  background: #f5c96a;
+  box-shadow: 0 0 14px rgba(245, 201, 106, 0.55);
+}
+
+.availability-unavailable .availability-dot,
+.availability-error .availability-dot {
+  background: #ff6f91;
+  box-shadow: 0 0 14px rgba(255, 111, 145, 0.50);
+}
+
+
+/* Stay details */
+
+.estimate-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.estimate-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: rgba(193, 167, 255, 0.05);
+  border: 1px solid rgba(193, 167, 255, 0.18);
+  border-radius: 15px;
+}
+
+.estimate-grid span {
+  color: #c5bed3;
+  font-size: 0.83rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.estimate-grid strong {
+  color: #ffffff;
+  font-size: 1.12rem;
+}
+
+
+/* Big estimated total */
+
+.estimate-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 18px 0;
+  padding: 20px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(141, 99, 255, 0.30),
+      rgba(79, 47, 151, 0.20)
+    );
+
+  border: 1px solid rgba(193, 167, 255, 0.42);
+  border-radius: 18px;
+}
+
+.estimate-total span {
+  color: #e8e0f5;
+  font-weight: 700;
+}
+
+.estimate-total strong {
+  color: #d8c5ff;
+  font-size: 2.3rem;
+  line-height: 1;
+  text-shadow:
+    0 0 18px rgba(141, 99, 255, 0.42);
+}
+
+
+/* Disclaimer */
+
+.estimate-disclaimer {
+  margin: 16px 0;
+  padding: 13px 15px;
+  color: #c5bed3 !important;
+  background: rgba(255, 255, 255, 0.025);
+  border-left: 3px solid #8d63ff;
+  border-radius: 5px 12px 12px 5px;
+  font-size: 0.9rem;
+}
+
+
+/* Continue button */
+
+.estimate-continue {
+  margin-top: 7px;
+}
+
+
+/* Unavailable result */
+
+.availability-unavailable {
+  border-color: rgba(255, 111, 145, 0.32);
+}
+
+.availability-unavailable .availability-status {
+  border-color: rgba(255, 111, 145, 0.30);
+}
+
+
+/* Error result */
+
+.availability-error {
+  border-color: rgba(255, 111, 145, 0.35);
+}
+
+
+/* Loading message */
+
+.availability-loading {
+  margin-top: 14px;
+  color: #c1a7ff !important;
+  text-align: center;
+  font-weight: 700;
+}
+
+
+/* ===== CALCULATOR MOBILE ===== */
+
+@media (max-width: 700px) {
+
+  .availability-result {
+    padding: 19px;
+  }
+
+  .estimate-grid {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+
+  .estimate-total {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .estimate-total strong {
+    font-size: 2.5rem;
+  }
+
+  .estimate-continue {
+    width: 100%;
+  }
+}
