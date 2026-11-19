@@ -434,3 +434,50 @@
     left: 10px;
   }
 }
+
+/* ===== DESKTOP LAYOUT CORRECTION ===== */
+
+@media (min-width: 801px) {
+
+  .services-section > .eyebrow,
+  .services-section > h2,
+  .services-section > .service-grid,
+  .services-section > .pricing-info-grid,
+  .services-section > .booking-policy {
+    width: min(1180px, calc(100% - 44px));
+    max-width: 1180px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .service-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mini-rate-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mini-rate {
+    min-width: 0;
+  }
+
+  .mini-rate span,
+  .mini-rate strong {
+    overflow-wrap: anywhere;
+  }
+
+  .pyrce-notice {
+    width: 100%;
+  }
+
+  .pricing-info-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
