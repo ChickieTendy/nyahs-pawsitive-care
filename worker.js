@@ -115,6 +115,38 @@ async function getAvailabilityRows(
   return result.results || [];
 }
 
+async function sha256Hex(value) {
+  const data =
+    new TextEncoder().encode(value);
+
+  const digest =
+    await crypto.subtle.digest(
+      "SHA-256",
+      data
+    );
+
+  return Array
+    .from(new Uint8Array(digest))
+    .map((byte) =>
+      byte.toString(16).padStart(2, "0")
+    )
+    .join("");
+}
+
+function createSecureToken() {
+  const randomBytes =
+    new Uint8Array(32);
+
+  crypto.getRandomValues(randomBytes);
+
+  return Array
+    .from(randomBytes)
+    .map((byte) =>
+      byte.toString(16).padStart(2, "0")
+    )
+    .join("");
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -653,6 +685,13 @@ export default {
       );
     }
 
+    /*
+ * Request a passwordless customer sign-in link.
+ */
+if (
+  url.pathname === "/api/auth/request-link" &&
+  request.method === "POST"
+) {
     return env.ASSETS.fetch(request);
   }
 };
