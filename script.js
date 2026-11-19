@@ -185,3 +185,174 @@ if (availabilityForm) {
     }
   });
 }
+
+// ===== TRANSFER CALCULATOR TO REQUEST CARE =====
+
+let latestCareEstimate = null;
+
+document.addEventListener("click", (event) => {
+  const continueButton =
+    event.target.closest(".estimate-continue");
+
+  if (!continueButton) {
+    return;
+  }
+
+  const service =
+    document.querySelector("#availability-service")?.value;
+
+  const start =
+    document.querySelector("#availability-start")?.value;
+
+  const end =
+    document.querySelector("#availability-end")?.value;
+
+  const dogs =
+    document.querySelector("#availability-dogs")?.value;
+
+  if (!service || !start || !end || !dogs) {
+    return;
+  }
+
+  const result =
+    document.querySelector("#availability-result");
+
+  if (
+    !result ||
+    result.classList.contains("availability-unavailable")
+  ) {
+    return;
+  }
+
+  const startDate = new Date(`${start}T00:00:00`);
+  const endDate = new Date(`${end}T00:00:00`);
+
+  const nights = Math.round(
+    (endDate - startDate) / 86400000
+  );
+
+  let nightlyRate = 0;
+
+  if (service === "boarding") {
+    if (Number(dogs) === 1) nightlyRate = 55;
+    else if (Number(dogs) === 2) nightlyRate = 95;
+    else nightlyRate = 95 + ((Number(dogs) - 2) * 40);
+  }
+
+  if (service === "house-sitting") {
+    if (Number(dogs) === 1) nightlyRate = 65;
+    else if (Number(dogs) === 2) nightlyRate = 105;
+    else nightlyRate = 105 + ((Number(dogs) - 2) * 40);
+  }
+
+  const estimatedTotal =
+    nights * nightlyRate;
+
+  const serviceName =
+    service === "boarding"
+      ? "Dog Boarding"
+      : "In-Home House Sitting";
+
+  latestCareEstimate = {
+    service,
+    serviceName,
+    start,
+    end,
+    dogs: Number(dogs),
+    nights,
+    nightlyRate,
+    estimatedTotal
+  };
+
+  // Existing Request Care service field.
+  const requestService =
+    document.querySelector(
+      '#care-form select[name="service"]'
+    );
+
+  if (requestService) {
+    requestService.value = serviceName;
+  }
+
+  // Existing start/end date fields.
+  const requestStart =
+    document.querySelector(
+      '#care-form input[name="startDate"]'
+    );
+
+  const requestEnd =
+    document.querySelector(
+      '#care-form input[name="endDate"]'
+    );
+
+  if (requestStart) requestStart.value = start;
+  if (requestEnd) requestEnd.value = end;
+
+  // Fill visible summary.
+  const summary =
+    document.querySelector("#request-summary");
+
+  const summaryService =
+    document.querySelector("#summary-service");
+
+  const summaryDates =
+    document.querySelector("#summary-dates");
+
+  const summaryDogs =
+    document.querySelector("#summary-dogs");
+
+  const summaryNights =
+    document.querySelector("#summary-nights");
+
+  const summaryTotal =
+    document.querySelector("#summary-total");
+
+  const formattedStart =
+    startDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
+
+  const formattedEnd =
+    endDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
+
+  if (summaryService) {
+    summaryService.textContent = serviceName;
+  }
+
+  if (summaryDates) {
+    summaryDates.textContent =
+      `${formattedStart} – ${formattedEnd}`;
+  }
+
+  if (summaryDogs) {
+    summaryDogs.textContent =
+      `${dogs} ${Number(dogs) === 1 ? "dog" : "dogs"}`;
+  }
+
+  if (summaryNights) {
+    summaryNights.textContent =
+      `${nights} ${nights === 1 ? "night" : "nights"}`;
+  }
+
+  if (summaryTotal) {
+    summaryTotal.textContent =
+      new Intl.NumberFormat(
+        "en-US",
+        {
+          style: "currency",
+          currency: "USD",
+          maximumFractionDigits: 0
+        }
+      ).format(estimatedTotal);
+  }
+
+  if (summary) {
+    summary.hidden = false;
+  }
+});
