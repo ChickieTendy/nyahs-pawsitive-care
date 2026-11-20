@@ -157,7 +157,47 @@ function createSessionCookie(rawSession) {
     "Max-Age=604800"
   ].join("; ");
 }
+function getCookieValue(request, cookieName) {
+  const cookieHeader =
+    request.headers.get("Cookie") || "";
 
+  const cookies =
+    cookieHeader.split(";");
+
+  for (const cookie of cookies) {
+    const separatorIndex =
+      cookie.indexOf("=");
+
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const name =
+      cookie
+        .slice(0, separatorIndex)
+        .trim();
+
+    const value =
+      cookie
+        .slice(separatorIndex + 1)
+        .trim();
+
+    if (name === cookieName) {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -1153,6 +1193,495 @@ if (
     );
   }
 }   
+    /*
+ * Authenticated customer account dashboard.
+ * Read-only household checkpoint.
+ */
+if (
+  url.pathname === "/account" &&
+  request.method === "GET"
+) {
+  const rawSession =
+    getCookieValue(
+      request,
+      "__Host-npc_session"
+    );
+
+  if (!rawSession) {
+    return Response.redirect(
+      "https://nyahspawsitivecare.com/#account-sign-in",
+      302
+    );
+  }
+
+  try {
+    const sessionHash =
+      await sha256Hex(rawSession);
+
+    const customer =
+      await env.DB
+        .prepare(`
+          SELECT
+            ca.id AS account_id,
+            ca.account_number,
+            ca.household_id,
+            ca.email,
+            ca.status AS account_status,
+            ca.last_login_at,
+
+            h.household_number,
+            h.display_name,
+            h.status AS household_status,
+            h.address_line_1,
+            h.address_line_2,
+            h.city,
+            h.state,
+            h.postal_code
+
+          FROM customer_sessions cs
+
+          JOIN customer_accounts ca
+            ON ca.id = cs.account_id
+
+          JOIN households h
+            ON h.id = ca.household_id
+
+          WHERE cs.session_hash = ?1
+            AND cs.revoked_at IS NULL
+            AND cs.expires_at > CURRENT_TIMESTAMP
+            AND ca.status = 'active'
+
+          LIMIT 1
+        `)
+        .bind(sessionHash)
+        .first();
+
+    if (!customer) {
+      return Response.redirect(
+        "https://nyahspawsitivecare.com/#account-sign-in",
+        302
+      );
+    }
+
+    const counts =
+      await env.DB
+        .prepare(`
+          SELECT
+            (
+              SELECT COUNT(*)
+              FROM household_members
+              WHERE household_id = ?1
+                AND status = 'active'
+            ) AS member_count,
+
+            (
+              SELECT COUNT(*)
+              FROM emergency_contacts
+              WHERE household_id = ?1
+            ) AS emergency_contact_count,
+
+            (
+              SELECT COUNT(*)
+              FROM pets
+              WHERE household_id = ?1
+                AND status = 'active'
+            ) AS pet_count,
+
+            (
+              SELECT COUNT(*)
+              FROM vaccinations v
+              JOIN pets p
+                ON p.id = v.pet_id
+              WHERE p.household_id = ?1
+            ) AS vaccination_count
+        `)
+        .bind(customer.household_id)
+        .first();
+
+    await env.DB
+      .prepare(`
+        UPDATE customer_sessions
+        SET last_seen_at = CURRENT_TIMESTAMP
+        WHERE session_hash = ?1
+      `)
+      .bind(sessionHash)
+      .run();
+
+    const addressParts = [
+      customer.address_line_1,
+      customer.address_line_2,
+      customer.city,
+      customer.state,
+      customer.postal_code
+    ].filter(Boolean);
+
+    const address =
+      addressParts.length > 0
+        ? addressParts.join(", ")
+        : "No household address added yet.";
+
+    const page = `
+      <!doctype html>
+      <html lang="en">
+
+        <head>
+          <meta charset="utf-8">
+
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1"
+          >
+
+          <meta
+            name="robots"
+            content="noindex, nofollow"
+          >
+
+          <title>
+            My Account | Nyah's Pawsitive Care
+          </title>
+
+          <style>
+            :root {
+              color-scheme: dark;
+              --background: #09080d;
+              --panel: #15101d;
+              --panel-two: #1b1426;
+              --purple: #c1a7ff;
+              --purple-strong: #8d63ff;
+              --text: #f7f2ff;
+              --muted: #c4bbd0;
+              --border:
+                rgba(193, 167, 255, 0.24);
+            }
+
+            * {
+              box-sizing: border-box;
+            }
+
+            body {
+              margin: 0;
+              min-height: 100vh;
+              padding: 38px 18px 70px;
+              background:
+                radial-gradient(
+                  circle at top,
+                  rgba(141, 99, 255, 0.14),
+                  transparent 36%
+                ),
+                var(--background);
+              color: var(--text);
+              font-family:
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+            }
+
+            main {
+              width: min(1000px, 100%);
+              margin: 0 auto;
+            }
+
+            .topbar {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 18px;
+              margin-bottom: 30px;
+            }
+
+            .brand {
+              color: var(--purple);
+              font-size: 0.82rem;
+              font-weight: 900;
+              letter-spacing: 0.1em;
+              text-transform: uppercase;
+            }
+
+            .home-link {
+              color: var(--text);
+              text-decoration: none;
+              font-weight: 800;
+            }
+
+            .hero {
+              padding: 28px;
+              background:
+                linear-gradient(
+                  145deg,
+                  var(--panel),
+                  #0f0c15
+                );
+              border: 1px solid var(--border);
+              border-radius: 24px;
+              box-shadow:
+                0 20px 45px rgba(0, 0, 0, 0.30);
+            }
+
+            .status {
+              display: inline-block;
+              padding: 7px 11px;
+              color: #eee6ff;
+              background:
+                rgba(141, 99, 255, 0.18);
+              border: 1px solid var(--border);
+              border-radius: 999px;
+              font-size: 0.74rem;
+              font-weight: 900;
+              letter-spacing: 0.07em;
+              text-transform: uppercase;
+            }
+
+            h1 {
+              margin: 16px 0 9px;
+              font-size:
+                clamp(2rem, 6vw, 3.5rem);
+            }
+
+            .intro,
+            .address,
+            .notice {
+              color: var(--muted);
+              line-height: 1.65;
+            }
+
+            .summary-grid {
+              display: grid;
+              grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+              gap: 12px;
+              margin-top: 22px;
+            }
+
+            .summary-card {
+              padding: 17px;
+              background: var(--panel-two);
+              border:
+                1px solid rgba(
+                  193,
+                  167,
+                  255,
+                  0.16
+                );
+              border-radius: 16px;
+            }
+
+            .summary-card span {
+              display: block;
+              margin-bottom: 7px;
+              color: var(--muted);
+              font-size: 0.72rem;
+              font-weight: 800;
+              letter-spacing: 0.07em;
+              text-transform: uppercase;
+            }
+
+            .summary-card strong {
+              color: var(--purple);
+              font-size: 1.8rem;
+            }
+
+            .section {
+              margin-top: 20px;
+              padding: 23px;
+              background: var(--panel);
+              border: 1px solid var(--border);
+              border-radius: 20px;
+            }
+
+            .section h2 {
+              margin-top: 0;
+            }
+
+            .notice {
+              padding: 14px 16px;
+              background:
+                rgba(141, 99, 255, 0.08);
+              border-left:
+                3px solid var(--purple-strong);
+              border-radius: 6px 13px 13px 6px;
+            }
+
+            @media (max-width: 700px) {
+              body {
+                padding:
+                  24px 13px 50px;
+              }
+
+              .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+              }
+
+              .hero {
+                padding: 19px;
+              }
+
+              .summary-grid {
+                grid-template-columns:
+                  1fr 1fr;
+              }
+            }
+
+            @media (max-width: 430px) {
+              .summary-grid {
+                grid-template-columns: 1fr;
+              }
+            }
+          </style>
+        </head>
+
+        <body>
+
+          <main>
+
+            <nav class="topbar">
+              <span class="brand">
+                Nyah's Pawsitive Care
+              </span>
+
+              <a
+                class="home-link"
+                href="/"
+              >
+                Back to Website
+              </a>
+            </nav>
+
+            <section class="hero">
+
+              <span class="status">
+                ${escapeHtml(
+                  customer.household_status
+                )}
+              </span>
+
+              <h1>
+                ${escapeHtml(
+                  customer.display_name ||
+                  "My Household"
+                )}
+              </h1>
+
+              <p class="intro">
+                Secure customer account for
+                ${escapeHtml(customer.email)}.
+              </p>
+
+              <p class="address">
+                ${escapeHtml(address)}
+              </p>
+
+              <div class="summary-grid">
+
+                <div class="summary-card">
+                  <span>Pet Parents</span>
+                  <strong>
+                    ${Number(
+                      counts?.member_count || 0
+                    )}
+                  </strong>
+                </div>
+
+                <div class="summary-card">
+                  <span>Emergency Contacts</span>
+                  <strong>
+                    ${Number(
+                      counts
+                        ?.emergency_contact_count ||
+                      0
+                    )}
+                  </strong>
+                </div>
+
+                <div class="summary-card">
+                  <span>Pets</span>
+                  <strong>
+                    ${Number(
+                      counts?.pet_count || 0
+                    )}
+                  </strong>
+                </div>
+
+                <div class="summary-card">
+                  <span>Vaccination Records</span>
+                  <strong>
+                    ${Number(
+                      counts
+                        ?.vaccination_count ||
+                      0
+                    )}
+                  </strong>
+                </div>
+
+              </div>
+
+            </section>
+
+            <section class="section">
+              <h2>My Household</h2>
+
+              <p>
+                Household number:
+                <strong>
+                  ${escapeHtml(
+                    customer.household_number
+                  )}
+                </strong>
+              </p>
+
+              <p class="notice">
+                This first portal version is read-only.
+                Profile editing, pets, emergency contacts,
+                veterinarians, vaccinations, and documents
+                will be added after household isolation is
+                verified.
+              </p>
+            </section>
+
+          </main>
+
+        </body>
+      </html>
+    `;
+
+    return new Response(
+      page,
+      {
+        headers: {
+          "Content-Type":
+            "text/html; charset=utf-8",
+
+          "Cache-Control":
+            "no-store",
+
+          "X-Frame-Options":
+            "DENY",
+
+          "Referrer-Policy":
+            "no-referrer"
+        }
+      }
+    );
+
+  } catch (error) {
+    return new Response(
+      "Unable to load the customer account right now.",
+      {
+        status: 500,
+        headers: {
+          "Content-Type":
+            "text/plain; charset=utf-8",
+
+          "Cache-Control":
+            "no-store"
+        }
+      }
+    );
+  }
+}
     return env.ASSETS.fetch(request);
   }
 };
