@@ -2406,22 +2406,31 @@ if (
                 >
 
                 <div class="turnstile-wrap">
-
-                  <div
-                    class="cf-turnstile"
-                    data-sitekey="0x4AAAAAAGJ2AmD8lBspXWmi"
-                    data-theme="dark"
-                  ></div>
+<div
+  id="signup-turnstile"
+  class="cf-turnstile"
+  data-sitekey="0x4AAAAAAGJ2AmD8lBspXWmi"
+  data-theme="dark"
+  data-callback="signupTurnstilePassed"
+  data-expired-callback="signupTurnstileExpired"
+  data-error-callback="signupTurnstileExpired"
+></div>
 
                 </div>
 
-                <button
-                  type="submit"
-                  disabled
-                >
-                  Create Account
-                </button>
+               <button
+  id="signup-submit"
+  type="submit"
+  disabled
+>
+  Create Account
+</button>
 
+<p
+  id="signup-message"
+  class="signin-message"
+  aria-live="polite"
+></p>
               </form>
 
             </article>
@@ -2594,6 +2603,184 @@ if (
       }
     }
   );
+  let signupTurnstileToken = "";
+
+function signupTurnstilePassed(token) {
+  signupTurnstileToken = token;
+
+  const button =
+    document.querySelector(
+      "#signup-submit"
+    );
+
+  if (button) {
+    button.disabled = false;
+  }
+}
+
+function signupTurnstileExpired() {
+  signupTurnstileToken = "";
+
+  const button =
+    document.querySelector(
+      "#signup-submit"
+    );
+
+  if (button) {
+    button.disabled = true;
+  }
+}
+
+const signupForm =
+  document.querySelector(
+    "#signup-form"
+  );
+
+const signupMessage =
+  document.querySelector(
+    "#signup-message"
+  );
+
+signupForm?.addEventListener(
+  "submit",
+  async (event) => {
+    event.preventDefault();
+
+    const fullName =
+      document.querySelector(
+        "#signup-name"
+      )?.value.trim();
+
+    const email =
+      document.querySelector(
+        "#signup-email"
+      )?.value
+        .trim()
+        .toLowerCase();
+
+    const phone =
+      document.querySelector(
+        "#signup-phone"
+      )?.value.trim();
+
+    if (
+      !fullName ||
+      !email ||
+      !phone ||
+      !signupTurnstileToken
+    ) {
+      signupMessage.className =
+        "signin-message error";
+
+      signupMessage.textContent =
+        "Complete all fields and the security verification first.";
+
+      return;
+    }
+
+    const button =
+      document.querySelector(
+        "#signup-submit"
+      );
+
+    if (button) {
+      button.disabled = true;
+
+      button.textContent =
+        "Creating Account...";
+    }
+
+    signupMessage.className =
+      "signin-message";
+
+    signupMessage.textContent =
+      "Creating your secure household account...";
+
+    try {
+      const response =
+        await fetch(
+          "/api/auth/signup",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              fullName,
+              email,
+              phone,
+              turnstileToken:
+                signupTurnstileToken
+            })
+          }
+        );
+
+      const result =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !result.ok
+      ) {
+        throw new Error(
+          result.error ||
+          "Unable to create the account."
+        );
+      }
+
+      signupMessage.className =
+        "signin-message success";
+
+      if (result.accountExists) {
+        signupMessage.textContent =
+          "An account may already exist for this email. Use Returning Client above to sign in.";
+      } else {
+        signupMessage.textContent =
+          "Account created. Check your email to verify your address and sign in.";
+      }
+
+      signupTurnstileToken = "";
+
+      if (window.turnstile) {
+        window.turnstile.reset(
+          "#signup-turnstile"
+        );
+      }
+
+      if (button) {
+        button.textContent =
+          result.accountExists
+            ? "Use Returning Client"
+            : "Account Created";
+      }
+
+    } catch (error) {
+      signupMessage.className =
+        "signin-message error";
+
+      signupMessage.textContent =
+        error.message;
+
+      signupTurnstileToken = "";
+
+      if (window.turnstile) {
+        window.turnstile.reset(
+          "#signup-turnstile"
+        );
+      }
+
+      if (button) {
+        button.disabled = true;
+
+        button.textContent =
+          "Create Account";
+      }
+    }
+  }
+);
 </script>
       </body>
 
