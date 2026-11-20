@@ -1973,6 +1973,172 @@ if (
   }
 }
     /*
+ * Update the authenticated customer's
+ * household profile.
+ */
+if (
+  url.pathname === "/api/account/household" &&
+  request.method === "PUT"
+) {
+  const rawSession =
+    getCookieValue(
+      request,
+      "__Host-npc_session"
+    );
+
+  if (!rawSession) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Authentication required."
+      },
+      401
+    );
+  }
+
+  try {
+    const body =
+      await request.json();
+
+    const displayName =
+      typeof body.displayName === "string"
+        ? body.displayName
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 120)
+        : "";
+
+    const addressLine1 =
+      typeof body.addressLine1 === "string"
+        ? body.addressLine1
+            .trim()
+            .slice(0, 150)
+        : "";
+
+    const addressLine2 =
+      typeof body.addressLine2 === "string"
+        ? body.addressLine2
+            .trim()
+            .slice(0, 150)
+        : "";
+
+    const city =
+      typeof body.city === "string"
+        ? body.city
+            .trim()
+            .slice(0, 100)
+        : "";
+
+    const state =
+      typeof body.state === "string"
+        ? body.state
+            .trim()
+            .toUpperCase()
+            .slice(0, 2)
+        : "";
+
+    const postalCode =
+      typeof body.postalCode === "string"
+        ? body.postalCode
+            .trim()
+            .slice(0, 10)
+        : "";
+
+    if (!displayName) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter a household name."
+        },
+        400
+      );
+    }
+
+    /*
+     * Resolve household from the session.
+     * Never trust a household ID from
+     * the customer's browser.
+     */
+    const sessionHash =
+      await sha256Hex(rawSession);
+
+    const account =
+      await env.DB
+        .prepare(`
+          SELECT
+            ca.household_id
+          FROM customer_sessions cs
+
+          JOIN customer_accounts ca
+            ON ca.id = cs.account_id
+
+          WHERE cs.session_hash = ?1
+            AND cs.revoked_at IS NULL
+            AND cs.expires_at >
+              CURRENT_TIMESTAMP
+            AND ca.status = 'active'
+
+          LIMIT 1
+        `)
+        .bind(sessionHash)
+        .first();
+
+    if (!account) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "The customer session is invalid or expired."
+        },
+        401
+      );
+    }
+
+    await env.DB
+      .prepare(`
+        UPDATE households
+        SET
+          display_name = ?1,
+          address_line_1 = ?2,
+          address_line_2 = ?3,
+          city = ?4,
+          state = ?5,
+          postal_code = ?6,
+          updated_at =
+            CURRENT_TIMESTAMP
+        WHERE id = ?7
+      `)
+      .bind(
+        displayName,
+        addressLine1 || null,
+        addressLine2 || null,
+        city || null,
+        state || null,
+        postalCode || null,
+        account.household_id
+      )
+      .run();
+
+    return jsonResponse({
+      ok: true,
+      message:
+        "Household information updated."
+    });
+
+  } catch (error) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Unable to update the household right now."
+      },
+      500
+    );
+  }
+}
+    /*
  * Public customer sign-in and account creation page.
  */
 if (
