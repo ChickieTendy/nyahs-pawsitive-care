@@ -1052,7 +1052,428 @@ return jsonResponse({
     );
   }
   }
-    
+    /*
+ * Create a new customer household and
+ * send an email-verification magic link.
+ */
+if (
+  url.pathname === "/api/auth/signup" &&
+  request.method === "POST"
+) {
+  try {
+    const body =
+      await request.json();
+
+    const fullName =
+      typeof body.fullName === "string"
+        ? body.fullName
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 100)
+        : "";
+
+    const email =
+      typeof body.email === "string"
+        ? body.email
+            .trim()
+            .toLowerCase()
+            .slice(0, 200)
+        : "";
+
+    const phone =
+      typeof body.phone === "string"
+        ? body.phone
+            .trim()
+            .slice(0, 40)
+        : "";
+
+    const turnstileToken =
+      typeof body.turnstileToken === "string"
+        ? body.turnstileToken
+        : "";
+
+    if (
+      !fullName ||
+      fullName.length < 2
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter your full name."
+        },
+        400
+      );
+    }
+
+    if (
+      !email ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter a valid email address."
+        },
+        400
+      );
+    }
+
+    if (
+      !phone ||
+      phone.replace(/\D/g, "").length < 7
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter a valid phone number."
+        },
+        400
+      );
+    }
+
+    /*
+     * Verify Turnstile before writing
+     * any account data.
+     */
+    const turnstileValid =
+      await verifyTurnstile(
+        turnstileToken,
+        request,
+        env
+      );
+
+    if (!turnstileValid) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Security verification failed. Please try again."
+        },
+        400
+      );
+    }
+
+    /*
+     * Prevent the same email from
+     * creating another household.
+     */
+    const existingAccount =
+      await env.DB
+        .prepare(`
+          SELECT
+            id,
+            status
+          FROM customer_accounts
+          WHERE email = ?1
+          LIMIT 1
+        `)
+        .bind(email)
+        .first();
+
+    if (existingAccount) {
+      return jsonResponse(
+        {
+          ok: true,
+          accountExists: true,
+          message:
+            "An account may already exist for this email. Use Returning Client to sign in."
+        },
+        200
+      );
+    }
+
+    /*
+     * Generate identifiers.
+     */
+    const identifier =
+      crypto
+        .randomUUID()
+        .replaceAll("-", "")
+        .slice(0, 12)
+        .toUpperCase();
+
+    const householdNumber =
+      `HH-${identifier}`;
+
+    const accountNumber =
+      `CA-${identifier}`;
+
+    const rawToken =
+      createSecureToken();
+
+    const tokenHash =
+      await sha256Hex(rawToken);
+
+    const expiresAt =
+      new Date(
+        Date.now() +
+        (15 * 60 * 1000)
+      ).toISOString();
+
+    /*
+     * Create the household, account,
+     * primary parent, and verification token
+     * together.
+     *
+     * D1 batch executes these statements
+     * in order.
+     */
+    await env.DB.batch([
+
+      env.DB
+        .prepare(`
+          INSERT INTO households (
+            household_number,
+            display_name,
+            status
+          )
+          VALUES (
+            ?1,
+            ?2,
+            ?3
+          )
+        `)
+        .bind(
+          householdNumber,
+          `${fullName}'s Household`,
+          "pending"
+        ),
+
+      env.DB
+        .prepare(`
+          INSERT INTO customer_accounts (
+            account_number,
+            household_id,
+            email,
+            status,
+            email_verified
+          )
+          SELECT
+            ?1,
+            id,
+            ?2,
+            ?3,
+            0
+          FROM households
+          WHERE household_number = ?4
+        `)
+        .bind(
+          accountNumber,
+          email,
+          "active",
+          householdNumber
+        ),
+
+      env.DB
+        .prepare(`
+          INSERT INTO household_members (
+            household_id,
+            full_name,
+            email,
+            phone,
+            role,
+            is_primary_contact,
+            can_request_care,
+            receives_updates,
+            status
+          )
+          SELECT
+            h.id,
+            ?1,
+            ?2,
+            ?3,
+            ?4,
+            1,
+            1,
+            1,
+            'active'
+          FROM households h
+          WHERE h.household_number = ?5
+        `)
+        .bind(
+          fullName,
+          email,
+          phone,
+          "Primary Pet Parent",
+          householdNumber
+        ),
+
+      env.DB
+        .prepare(`
+          INSERT INTO auth_tokens (
+            account_id,
+            token_hash,
+            purpose,
+            expires_at
+          )
+          SELECT
+            ca.id,
+            ?1,
+            ?2,
+            ?3
+          FROM customer_accounts ca
+          WHERE ca.account_number = ?4
+        `)
+        .bind(
+          tokenHash,
+          "magic_login",
+          expiresAt,
+          accountNumber
+        )
+
+    ]);
+
+    /*
+     * Build email verification/sign-in URL.
+     */
+    const magicUrl =
+      new URL(
+        "/auth/verify",
+        "https://nyahspawsitivecare.com"
+      );
+
+    magicUrl.searchParams.set(
+      "token",
+      rawToken
+    );
+
+    const resendResponse =
+      await fetch(
+        "https://api.resend.com/emails",
+        {
+          method: "POST",
+
+          headers: {
+            "Authorization":
+              `Bearer ${env.RESEND_API_KEY}`,
+
+            "Content-Type":
+              "application/json",
+
+            "User-Agent":
+              "nyahs-pawsitive-care/1.0"
+          },
+
+          body: JSON.stringify({
+            from:
+              "Nyah's Pawsitive Care <login@accounts.nyahspawsitivecare.com>",
+
+            to: [email],
+
+            subject:
+              "Verify your Nyah's Pawsitive Care account",
+
+            html: `
+              <div
+                style="
+                  font-family:Arial,sans-serif;
+                  max-width:560px;
+                  margin:auto;
+                  padding:32px;
+                  color:#241b30;
+                "
+              >
+
+                <h1
+                  style="
+                    color:#7b4ce2;
+                    margin-bottom:16px;
+                  "
+                >
+                  Welcome to Nyah's Pawsitive Care
+                </h1>
+
+                <p>
+                  Hi ${escapeHtml(fullName)},
+                </p>
+
+                <p>
+                  Your household account has been started.
+                  Verify your email to securely access your
+                  customer portal.
+                </p>
+
+                <p style="margin:28px 0;">
+                  <a
+                    href="${magicUrl.toString()}"
+                    style="
+                      display:inline-block;
+                      padding:14px 22px;
+                      background:#7b4ce2;
+                      color:#ffffff;
+                      text-decoration:none;
+                      border-radius:10px;
+                      font-weight:bold;
+                    "
+                  >
+                    Verify Email & Sign In
+                  </a>
+                </p>
+
+                <p>
+                  This link expires in 15 minutes
+                  and can only be used once.
+                </p>
+
+                <p
+                  style="
+                    color:#766b82;
+                    font-size:13px;
+                    margin-top:26px;
+                  "
+                >
+                  If you did not create this account,
+                  contact Nyah's Pawsitive Care.
+                </p>
+
+              </div>
+            `
+          })
+        }
+      );
+
+    if (!resendResponse.ok) {
+      /*
+       * Keep the pending account rather than
+       * silently duplicating an account on retry.
+       * Returning Client can be used once email
+       * delivery is available again.
+       */
+      return jsonResponse(
+        {
+          ok: false,
+          accountCreated: true,
+          error:
+            "Your account was created, but the verification email could not be sent. Please use Returning Client to request another sign-in link."
+        },
+        502
+      );
+    }
+
+    return jsonResponse(
+      {
+        ok: true,
+        accountCreated: true,
+        message:
+          "Account created. Check your email to verify your address and sign in."
+      },
+      201
+    );
+
+  } catch (error) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Unable to create the account right now."
+      },
+      500
+    );
+  }
+}
   /*
  * Verify a passwordless magic link
  * and create a customer session.
