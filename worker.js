@@ -3486,6 +3486,92 @@ if (
                   1fr 1fr;
               }
             }
+            .household-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  margin: 20px 0;
+}
+
+.household-form-grid label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.household-form-grid input {
+  width: 100%;
+  margin-top: 7px;
+  padding: 12px 13px;
+
+  color: var(--text);
+  background: #0d0b12;
+
+  border:
+    1px solid
+    rgba(193, 167, 255, 0.22);
+
+  border-radius: 11px;
+
+  font: inherit;
+}
+
+.household-form-grid input:focus {
+  outline: none;
+
+  border-color:
+    rgba(193, 167, 255, 0.65);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(141, 99, 255, 0.10);
+}
+
+.portal-button {
+  padding: 12px 17px;
+
+  color: white;
+  background:
+    linear-gradient(
+      135deg,
+      var(--purple-strong),
+      #6e42e8
+    );
+
+  border: 0;
+  border-radius: 11px;
+
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.portal-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.portal-message {
+  min-height: 24px;
+  margin: 13px 0 0;
+  color: var(--muted);
+}
+
+.portal-message.success {
+  color: #bfffd1;
+}
+
+.portal-message.error {
+  color: #ffc1c1;
+}
+
+@media (max-width: 700px) {
+  .household-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
             @media (max-width: 430px) {
               .summary-grid {
@@ -3593,7 +3679,87 @@ if (
                   )}
                 </strong>
               </p>
+<form id="household-form">
 
+  <div class="household-form-grid">
+
+    <label>
+      Household Name
+      <input
+        id="household-display-name"
+        type="text"
+        maxlength="120"
+        required
+      >
+    </label>
+
+    <label>
+      Street Address
+      <input
+        id="household-address-1"
+        type="text"
+        maxlength="150"
+        autocomplete="street-address"
+      >
+    </label>
+
+    <label>
+      Address Line 2
+      <input
+        id="household-address-2"
+        type="text"
+        maxlength="150"
+      >
+    </label>
+
+    <label>
+      City
+      <input
+        id="household-city"
+        type="text"
+        maxlength="100"
+        autocomplete="address-level2"
+      >
+    </label>
+
+    <label>
+      State
+      <input
+        id="household-state"
+        type="text"
+        maxlength="2"
+        autocomplete="address-level1"
+        placeholder="FL"
+      >
+    </label>
+
+    <label>
+      ZIP Code
+      <input
+        id="household-zip"
+        type="text"
+        maxlength="10"
+        autocomplete="postal-code"
+      >
+    </label>
+
+  </div>
+
+  <button
+    id="household-save"
+    type="submit"
+    class="portal-button"
+  >
+    Save Household Information
+  </button>
+
+  <p
+    id="household-message"
+    class="portal-message"
+    aria-live="polite"
+  ></p>
+
+</form>
               <p class="notice">
                 This first portal version is read-only.
                 Profile editing, pets, emergency contacts,
@@ -4458,7 +4624,68 @@ if (
           "Unable to load account details."
         );
       }
+const household =
+  data.household || {};
 
+const householdDisplayName =
+  document.querySelector(
+    "#household-display-name"
+  );
+
+const householdAddress1 =
+  document.querySelector(
+    "#household-address-1"
+  );
+
+const householdAddress2 =
+  document.querySelector(
+    "#household-address-2"
+  );
+
+const householdCity =
+  document.querySelector(
+    "#household-city"
+  );
+
+const householdState =
+  document.querySelector(
+    "#household-state"
+  );
+
+const householdZip =
+  document.querySelector(
+    "#household-zip"
+  );
+
+if (householdDisplayName) {
+  householdDisplayName.value =
+    household.displayName || "";
+}
+
+if (householdAddress1) {
+  householdAddress1.value =
+    household.addressLine1 || "";
+}
+
+if (householdAddress2) {
+  householdAddress2.value =
+    household.addressLine2 || "";
+}
+
+if (householdCity) {
+  householdCity.value =
+    household.city || "";
+}
+
+if (householdState) {
+  householdState.value =
+    household.state || "";
+}
+
+if (householdZip) {
+  householdZip.value =
+    household.postalCode || "";
+}
       renderParents(
         data.parents || []
       );
@@ -4507,6 +4734,138 @@ if (
   }
 
   loadAccountDetails();
+  const householdForm =
+  document.querySelector(
+    "#household-form"
+  );
+
+const householdMessage =
+  document.querySelector(
+    "#household-message"
+  );
+
+householdForm?.addEventListener(
+  "submit",
+  async (event) => {
+    event.preventDefault();
+
+    const saveButton =
+      document.querySelector(
+        "#household-save"
+      );
+
+    const payload = {
+      displayName:
+        document.querySelector(
+          "#household-display-name"
+        )?.value.trim() || "",
+
+      addressLine1:
+        document.querySelector(
+          "#household-address-1"
+        )?.value.trim() || "",
+
+      addressLine2:
+        document.querySelector(
+          "#household-address-2"
+        )?.value.trim() || "",
+
+      city:
+        document.querySelector(
+          "#household-city"
+        )?.value.trim() || "",
+
+      state:
+        document.querySelector(
+          "#household-state"
+        )?.value
+          .trim()
+          .toUpperCase() || "",
+
+      postalCode:
+        document.querySelector(
+          "#household-zip"
+        )?.value.trim() || ""
+    };
+
+    if (!payload.displayName) {
+      householdMessage.className =
+        "portal-message error";
+
+      householdMessage.textContent =
+        "Enter a household name.";
+
+      return;
+    }
+
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.textContent =
+        "Saving...";
+    }
+
+    householdMessage.className =
+      "portal-message";
+
+    householdMessage.textContent =
+      "Saving household information...";
+
+    try {
+      const response =
+        await fetch(
+          "/api/account/household",
+          {
+            method: "PUT",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            credentials:
+              "same-origin",
+
+            body:
+              JSON.stringify(payload)
+          }
+        );
+
+      const result =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !result.ok
+      ) {
+        throw new Error(
+          result.error ||
+          "Unable to save household information."
+        );
+      }
+
+      householdMessage.className =
+        "portal-message success";
+
+      householdMessage.textContent =
+        "Household information saved.";
+
+    } catch (error) {
+      householdMessage.className =
+        "portal-message error";
+
+      householdMessage.textContent =
+        error.message;
+
+    } finally {
+      if (saveButton) {
+        saveButton.disabled = false;
+
+        saveButton.textContent =
+          "Save Household Information";
+      }
+    }
+  }
+);
 </script>
         </body>
       </html>
