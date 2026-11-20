@@ -2182,7 +2182,397 @@ if (
       401
     );
   }
+/*
+ * Edit a pet parent belonging to the
+ * authenticated customer's household.
+ */
+if (
+  url.pathname.startsWith(
+    "/api/account/parents/"
+  ) &&
+  request.method === "PUT"
+) {
+  const rawSession =
+    getCookieValue(
+      request,
+      "__Host-npc_session"
+    );
 
+  if (!rawSession) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Authentication required."
+      },
+      401
+    );
+  }
+
+  try {
+    const parentIdText =
+      url.pathname
+        .slice(
+          "/api/account/parents/"
+            .length
+        )
+        .trim();
+
+    const parentId =
+      Number(parentIdText);
+
+    if (
+      !Number.isInteger(parentId) ||
+      parentId < 1
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Invalid pet parent."
+        },
+        400
+      );
+    }
+
+    const body =
+      await request.json();
+
+    const fullName =
+      typeof body.fullName === "string"
+        ? body.fullName
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 100)
+        : "";
+
+    const email =
+      typeof body.email === "string"
+        ? body.email
+            .trim()
+            .toLowerCase()
+            .slice(0, 200)
+        : "";
+
+    const phone =
+      typeof body.phone === "string"
+        ? body.phone
+            .trim()
+            .slice(0, 40)
+        : "";
+
+    const role =
+      typeof body.role === "string"
+        ? body.role
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 80)
+        : "";
+
+    const requestedPrimary =
+      body.isPrimaryContact === true;
+
+    const canRequestCare =
+      body.canRequestCare !== false
+        ? 1
+        : 0;
+
+    const receivesUpdates =
+      body.receivesUpdates !== false
+        ? 1
+        : 0;
+
+    if (
+      !fullName ||
+      fullName.length < 2
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter the pet parent’s full name."
+        },
+        400
+      );
+    }
+
+    if (
+      email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter a valid email address."
+        },
+        400
+      );
+    }
+
+    if (
+      phone &&
+      phone.replace(/\D/g, "")
+        .length < 7
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter a valid phone number."
+        },
+        400
+      );
+    }
+
+    if (!role) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter the person’s role."
+        },
+        400
+      );
+    }
+
+    /*
+     * Resolve the household from the
+     * authenticated session.
+     */
+    const sessionHash =
+      await sha256Hex(rawSession);
+
+    const account =
+      await env.DB
+        .prepare(`
+          SELECT
+            ca.household_id
+
+          FROM customer_sessions cs
+
+          JOIN customer_accounts ca
+            ON ca.id = cs.account_id
+
+          WHERE cs.session_hash = ?1
+            AND cs.revoked_at IS NULL
+            AND cs.expires_at >
+              CURRENT_TIMESTAMP
+            AND ca.status = 'active'
+
+          LIMIT 1
+        `)
+        .bind(sessionHash)
+        .first();
+
+    if (!account) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "The customer session is invalid or expired."
+        },
+        401
+      );
+    }
+
+    /*
+     * Critical ownership check:
+     * parent ID must belong to this household.
+     */
+    const existingParent =
+      await env.DB
+        .prepare(`
+          SELECT
+            id,
+            is_primary_contact
+
+          FROM household_members
+
+          WHERE id = ?1
+            AND household_id = ?2
+            AND status = 'active'
+
+          LIMIT 1
+        `)
+        .bind(
+          parentId,
+          account.household_id
+        )
+        .first();
+
+    if (!existingParent) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Pet parent not found."
+        },
+        404
+      );
+    }
+
+    /*
+     * Prevent duplicate active email
+     * within the same household.
+     */
+    if (email) {
+      const duplicate =
+        await env.DB
+          .prepare(`
+            SELECT id
+
+            FROM household_members
+
+            WHERE household_id = ?1
+              AND LOWER(email) = ?2
+              AND status = 'active'
+              AND id <> ?3
+
+            LIMIT 1
+          `)
+          .bind(
+            account.household_id,
+            email,
+            parentId
+          )
+          .first();
+
+      if (duplicate) {
+        return jsonResponse(
+          {
+            ok: false,
+            error:
+              "Another active pet parent already uses this email."
+          },
+          409
+        );
+      }
+    }
+
+    /*
+     * Don't let the current primary be
+     * demoted if no other primary exists.
+     */
+    if (
+      Number(
+        existingParent
+          .is_primary_contact
+      ) === 1 &&
+      !requestedPrimary
+    ) {
+      const otherPrimary =
+        await env.DB
+          .prepare(`
+            SELECT id
+
+            FROM household_members
+
+            WHERE household_id = ?1
+              AND status = 'active'
+              AND is_primary_contact = 1
+              AND id <> ?2
+
+            LIMIT 1
+          `)
+          .bind(
+            account.household_id,
+            parentId
+          )
+          .first();
+
+      if (!otherPrimary) {
+        return jsonResponse(
+          {
+            ok: false,
+            error:
+              "Choose another primary contact before removing primary status from this person."
+          },
+          409
+        );
+      }
+    }
+
+    const updateParent =
+      env.DB
+        .prepare(`
+          UPDATE household_members
+          SET
+            full_name = ?1,
+            email = ?2,
+            phone = ?3,
+            role = ?4,
+            is_primary_contact = ?5,
+            can_request_care = ?6,
+            receives_updates = ?7,
+            updated_at =
+              CURRENT_TIMESTAMP
+
+          WHERE id = ?8
+            AND household_id = ?9
+            AND status = 'active'
+        `)
+        .bind(
+          fullName,
+          email || null,
+          phone || null,
+          role,
+          requestedPrimary ? 1 : 0,
+          canRequestCare,
+          receivesUpdates,
+          parentId,
+          account.household_id
+        );
+
+    if (requestedPrimary) {
+      /*
+       * Transfer primary status and save
+       * the edited person atomically.
+       */
+      await env.DB.batch([
+        env.DB
+          .prepare(`
+            UPDATE household_members
+            SET
+              is_primary_contact = 0,
+              updated_at =
+                CURRENT_TIMESTAMP
+
+            WHERE household_id = ?1
+              AND status = 'active'
+              AND id <> ?2
+          `)
+          .bind(
+            account.household_id,
+            parentId
+          ),
+
+        updateParent
+      ]);
+
+    } else {
+      await updateParent.run();
+    }
+
+    return jsonResponse({
+      ok: true,
+      parentId,
+      message:
+        "Pet parent updated.",
+      isPrimaryContact:
+        requestedPrimary
+    });
+
+  } catch (error) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Unable to update the pet parent right now."
+      },
+      500
+    );
+  }
+}
   try {
     const body =
       await request.json();
