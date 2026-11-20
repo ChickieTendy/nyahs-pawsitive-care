@@ -1474,6 +1474,463 @@ if (
   }
 }
     /*
+ * Public customer sign-in and account creation page.
+ */
+if (
+  url.pathname === "/account-access" &&
+  request.method === "GET"
+) {
+  const page = `
+    <!doctype html>
+    <html lang="en">
+
+      <head>
+        <meta charset="utf-8">
+
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1"
+        >
+
+        <title>
+          Sign In | Nyah's Pawsitive Care
+        </title>
+
+        <script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          async
+          defer
+        ></script>
+
+        <style>
+          :root {
+            color-scheme: dark;
+
+            --bg: #09080d;
+            --panel: #15101d;
+            --panel-two: #1b1426;
+
+            --purple: #c1a7ff;
+            --purple-strong: #8d63ff;
+
+            --text: #f7f2ff;
+            --muted: #c5bdd0;
+
+            --border:
+              rgba(193, 167, 255, 0.24);
+          }
+
+          * {
+            box-sizing: border-box;
+          }
+
+          body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 38px 18px 70px;
+
+            background:
+              radial-gradient(
+                circle at top,
+                rgba(141, 99, 255, 0.16),
+                transparent 37%
+              ),
+              var(--bg);
+
+            color: var(--text);
+
+            font-family:
+              system-ui,
+              -apple-system,
+              BlinkMacSystemFont,
+              "Segoe UI",
+              sans-serif;
+          }
+
+          main {
+            width: min(1000px, 100%);
+            margin: 0 auto;
+          }
+
+          .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+
+            margin-bottom: 42px;
+          }
+
+          .brand {
+            color: var(--purple);
+
+            font-size: 0.82rem;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+          }
+
+          .back-link {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 800;
+          }
+
+          .intro {
+            max-width: 680px;
+            margin-bottom: 28px;
+          }
+
+          .intro h1 {
+            margin: 0 0 10px;
+
+            font-size:
+              clamp(2.3rem, 7vw, 4rem);
+          }
+
+          .intro p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.7;
+          }
+
+          .account-grid {
+            display: grid;
+
+            grid-template-columns:
+              repeat(2, minmax(0, 1fr));
+
+            gap: 18px;
+          }
+
+          .account-card {
+            padding: 25px;
+
+            background:
+              linear-gradient(
+                145deg,
+                var(--panel),
+                #0f0c15
+              );
+
+            border:
+              1px solid var(--border);
+
+            border-radius: 22px;
+
+            box-shadow:
+              0 18px 42px
+              rgba(0, 0, 0, 0.30);
+          }
+
+          .account-card h2 {
+            margin: 0 0 7px;
+          }
+
+          .card-intro {
+            min-height: 52px;
+
+            margin: 0 0 20px;
+
+            color: var(--muted);
+            line-height: 1.6;
+          }
+
+          label {
+            display: block;
+
+            margin: 15px 0 7px;
+
+            color: #eee7f7;
+
+            font-size: 0.86rem;
+            font-weight: 800;
+          }
+
+          input {
+            width: 100%;
+
+            padding: 13px 14px;
+
+            color: var(--text);
+            background: #0d0b12;
+
+            border:
+              1px solid
+              rgba(193, 167, 255, 0.22);
+
+            border-radius: 11px;
+
+            font: inherit;
+          }
+
+          input:focus {
+            outline: none;
+
+            border-color:
+              rgba(193, 167, 255, 0.65);
+
+            box-shadow:
+              0 0 0 3px
+              rgba(141, 99, 255, 0.10);
+          }
+
+          .turnstile-wrap {
+            margin: 20px 0;
+            min-height: 65px;
+          }
+
+          button {
+            width: 100%;
+
+            padding: 13px 16px;
+
+            color: white;
+
+            background:
+              linear-gradient(
+                135deg,
+                var(--purple-strong),
+                #6e42e8
+              );
+
+            border: 0;
+            border-radius: 11px;
+
+            font: inherit;
+            font-weight: 900;
+
+            cursor: pointer;
+          }
+
+          button[disabled] {
+            cursor: not-allowed;
+            opacity: 0.55;
+          }
+
+          .security-note {
+            margin-top: 22px;
+
+            padding: 14px 16px;
+
+            color: var(--muted);
+
+            background:
+              rgba(141, 99, 255, 0.07);
+
+            border-left:
+              3px solid
+              var(--purple-strong);
+
+            border-radius:
+              5px 12px 12px 5px;
+
+            font-size: 0.86rem;
+            line-height: 1.55;
+          }
+
+          @media (max-width: 760px) {
+            body {
+              padding:
+                24px 13px 50px;
+            }
+
+            .topbar {
+              align-items: flex-start;
+              flex-direction: column;
+            }
+
+            .account-grid {
+              grid-template-columns: 1fr;
+            }
+
+            .card-intro {
+              min-height: 0;
+            }
+          }
+        </style>
+      </head>
+
+      <body>
+
+        <main>
+
+          <nav class="topbar">
+
+            <span class="brand">
+              Nyah's Pawsitive Care
+            </span>
+
+            <a
+              class="back-link"
+              href="/"
+            >
+              Back to Website
+            </a>
+
+          </nav>
+
+          <section class="intro">
+
+            <h1>
+              Welcome to Pawsitive Care
+            </h1>
+
+            <p>
+              Sign in to manage your household and pets,
+              or create a new account to get started.
+            </p>
+
+          </section>
+
+          <section class="account-grid">
+
+            <article class="account-card">
+
+              <h2>
+                Returning Client
+              </h2>
+
+              <p class="card-intro">
+                We'll email you a secure,
+                passwordless sign-in link.
+              </p>
+
+              <form id="signin-form">
+
+                <label for="signin-email">
+                  Email Address
+                </label>
+
+                <input
+                  id="signin-email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                >
+
+                <div class="turnstile-wrap">
+
+                  <div
+                    class="cf-turnstile"
+                    data-sitekey="0x4AAAAAAGJ2AmD8lBspXWmi"
+                    data-theme="dark"
+                  ></div>
+
+                </div>
+
+                <button
+                  type="submit"
+                  disabled
+                >
+                  Send Secure Sign-In Link
+                </button>
+
+              </form>
+
+            </article>
+
+
+            <article class="account-card">
+
+              <h2>
+                New Client
+              </h2>
+
+              <p class="card-intro">
+                Create your household account,
+                then add your pets and care information.
+              </p>
+
+              <form id="signup-form">
+
+                <label for="signup-name">
+                  Full Name
+                </label>
+
+                <input
+                  id="signup-name"
+                  name="fullName"
+                  type="text"
+                  autocomplete="name"
+                  required
+                >
+
+                <label for="signup-email">
+                  Email Address
+                </label>
+
+                <input
+                  id="signup-email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                >
+
+                <label for="signup-phone">
+                  Phone Number
+                </label>
+
+                <input
+                  id="signup-phone"
+                  name="phone"
+                  type="tel"
+                  autocomplete="tel"
+                  required
+                >
+
+                <div class="turnstile-wrap">
+
+                  <div
+                    class="cf-turnstile"
+                    data-sitekey="0x4AAAAAAGJ2AmD8lBspXWmi"
+                    data-theme="dark"
+                  ></div>
+
+                </div>
+
+                <button
+                  type="submit"
+                  disabled
+                >
+                  Create Account
+                </button>
+
+              </form>
+
+            </article>
+
+          </section>
+
+          <p class="security-note">
+            🔒 Nyah's Pawsitive Care uses secure,
+            passwordless sign-in. Payment-card information
+            is never collected by this page.
+          </p>
+
+        </main>
+
+      </body>
+
+    </html>
+  `;
+
+  return new Response(
+    page,
+    {
+      headers: {
+        "Content-Type":
+          "text/html; charset=utf-8",
+
+        "Cache-Control":
+          "no-store"
+      }
+    }
+  );
+}
+    /*
  * Authenticated customer account dashboard.
  * Read-only household checkpoint.
  */
