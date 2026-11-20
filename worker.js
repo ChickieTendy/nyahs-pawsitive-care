@@ -1194,6 +1194,286 @@ if (
   }
 }   
     /*
+ * Authenticated read-only household data.
+ */
+if (
+  url.pathname === "/api/account-data" &&
+  request.method === "GET"
+) {
+  const rawSession =
+    getCookieValue(
+      request,
+      "__Host-npc_session"
+    );
+
+  if (!rawSession) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Authentication required."
+      },
+      401
+    );
+  }
+
+  try {
+    const sessionHash =
+      await sha256Hex(rawSession);
+
+    const customer =
+      await env.DB
+        .prepare(`
+          SELECT
+            ca.id AS account_id,
+            ca.household_id,
+            ca.email,
+
+            h.household_number,
+            h.display_name,
+            h.status AS household_status
+
+          FROM customer_sessions cs
+
+          JOIN customer_accounts ca
+            ON ca.id = cs.account_id
+
+          JOIN households h
+            ON h.id = ca.household_id
+
+          WHERE cs.session_hash = ?1
+            AND cs.revoked_at IS NULL
+            AND cs.expires_at > CURRENT_TIMESTAMP
+            AND ca.status = 'active'
+
+          LIMIT 1
+        `)
+        .bind(sessionHash)
+        .first();
+
+    if (!customer) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "The customer session is invalid or expired."
+        },
+        401
+      );
+    }
+
+    const results =
+      await env.DB.batch([
+
+        env.DB
+          .prepare(`
+            SELECT
+              full_name,
+              email,
+              phone,
+              role,
+              is_primary_contact,
+              can_request_care,
+              receives_updates
+            FROM household_members
+            WHERE household_id = ?1
+              AND status = 'active'
+            ORDER BY
+              is_primary_contact DESC,
+              full_name ASC
+          `)
+          .bind(customer.household_id),
+
+        env.DB
+          .prepare(`
+            SELECT
+              full_name,
+              relationship,
+              primary_phone,
+              alternate_phone,
+              email,
+              priority,
+              authorized_for_medical_decisions,
+              authorized_for_pickup,
+              notes
+            FROM emergency_contacts
+            WHERE household_id = ?1
+            ORDER BY
+              priority ASC,
+              full_name ASC
+          `)
+          .bind(customer.household_id),
+
+        env.DB
+          .prepare(`
+            SELECT
+              id,
+              pet_number,
+              name,
+              species,
+              breed,
+              color_markings,
+              date_of_birth,
+              sex,
+              spayed_neutered,
+              weight_lbs,
+              feeding_notes,
+              medication_notes,
+              medical_notes,
+              behavior_notes,
+              routine_notes,
+              allergy_notes,
+              house_trained,
+              crate_trained,
+              dog_friendly,
+              cat_friendly,
+              child_friendly,
+              meet_greet_status,
+              compatibility_status,
+              approval_status
+            FROM pets
+            WHERE household_id = ?1
+              AND status = 'active'
+            ORDER BY name ASC
+          `)
+          .bind(customer.household_id),
+
+        env.DB
+          .prepare(`
+            SELECT
+              p.pet_number,
+              p.name AS pet_name,
+
+              pvr.relationship_type,
+              pvr.is_primary,
+              pvr.permission_to_contact,
+
+              vc.clinic_name,
+              vc.veterinarian_name,
+              vc.phone,
+              vc.emergency_phone,
+              vc.email,
+              vc.website,
+              vc.address_line_1,
+              vc.address_line_2,
+              vc.city,
+              vc.state,
+              vc.postal_code,
+              vc.clinic_type
+
+            FROM pet_veterinary_relationships pvr
+
+            JOIN pets p
+              ON p.id = pvr.pet_id
+
+            JOIN veterinary_clinics vc
+              ON vc.id = pvr.clinic_id
+
+            WHERE p.household_id = ?1
+              AND p.status = 'active'
+
+            ORDER BY
+              p.name ASC,
+              pvr.is_primary DESC,
+              vc.clinic_name ASC
+          `)
+          .bind(customer.household_id),
+
+        env.DB
+          .prepare(`
+            SELECT
+              p.pet_number,
+              p.name AS pet_name,
+
+              v.vaccine_name,
+              v.administered_date,
+              v.expiration_date,
+              v.veterinarian_name,
+              v.source,
+              v.verification_status,
+              v.customer_confirmed,
+              v.admin_verified,
+              v.notes,
+
+              vc.clinic_name,
+
+              CASE
+                WHEN v.expiration_date IS NULL
+                  OR TRIM(v.expiration_date) = ''
+                  THEN 'needs_review'
+
+                WHEN DATE(v.expiration_date) <
+                  DATE('now')
+                  THEN 'expired'
+
+                WHEN DATE(v.expiration_date) <=
+                  DATE('now', '+30 days')
+                  THEN 'expiring_soon'
+
+                ELSE 'current'
+              END AS display_status
+
+            FROM vaccinations v
+
+            JOIN pets p
+              ON p.id = v.pet_id
+
+            LEFT JOIN veterinary_clinics vc
+              ON vc.id = v.clinic_id
+
+            WHERE p.household_id = ?1
+              AND p.status = 'active'
+
+            ORDER BY
+              p.name ASC,
+              v.expiration_date ASC,
+              v.vaccine_name ASC
+          `)
+          .bind(customer.household_id)
+
+      ]);
+
+    return jsonResponse({
+      ok: true,
+
+      household: {
+        householdNumber:
+          customer.household_number,
+
+        displayName:
+          customer.display_name,
+
+        status:
+          customer.household_status
+      },
+
+      parents:
+        results[0]?.results || [],
+
+      emergencyContacts:
+        results[1]?.results || [],
+
+      pets:
+        results[2]?.results || [],
+
+      veterinaryRelationships:
+        results[3]?.results || [],
+
+      vaccinations:
+        results[4]?.results || []
+    });
+
+  } catch (error) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Unable to load the household details."
+      },
+      500
+    );
+  }
+}
+    /*
  * Authenticated customer account dashboard.
  * Read-only household checkpoint.
  */
