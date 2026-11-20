@@ -1786,6 +1786,20 @@ if (
             opacity: 0.55;
           }
 
+.signin-message {
+  min-height: 24px;
+  margin: 14px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.signin-message.success {
+  color: #bfffd1;
+}
+
+.signin-message.error {
+  color: #ffc1c1;
+}
           .security-note {
             margin-top: 22px;
 
@@ -1890,20 +1904,31 @@ if (
 
                 <div class="turnstile-wrap">
 
-                  <div
-                    class="cf-turnstile"
-                    data-sitekey="0x4AAAAAAGJ2AmD8lBspXWmi"
-                    data-theme="dark"
-                  ></div>
+                 <div
+  id="signin-turnstile"
+  class="cf-turnstile"
+  data-sitekey="0x4AAAAAAGJ2AmD8lBspXWmi"
+  data-theme="dark"
+  data-callback="signinTurnstilePassed"
+  data-expired-callback="signinTurnstileExpired"
+  data-error-callback="signinTurnstileExpired"
+></div>
 
                 </div>
 
                 <button
-                  type="submit"
-                  disabled
-                >
-                  Send Secure Sign-In Link
-                </button>
+  id="signin-submit"
+  type="submit"
+  disabled
+>
+  Send Secure Sign-In Link
+</button>
+
+<p
+  id="signin-message"
+  class="signin-message"
+  aria-live="polite"
+></p>
 
               </form>
 
@@ -1990,6 +2015,165 @@ if (
 
         </main>
 
+<script>
+  let signinTurnstileToken = "";
+
+  function signinTurnstilePassed(token) {
+    signinTurnstileToken = token;
+
+    const button =
+      document.querySelector(
+        "#signin-submit"
+      );
+
+    if (button) {
+      button.disabled = false;
+    }
+  }
+
+  function signinTurnstileExpired() {
+    signinTurnstileToken = "";
+
+    const button =
+      document.querySelector(
+        "#signin-submit"
+      );
+
+    if (button) {
+      button.disabled = true;
+    }
+  }
+
+  const signinForm =
+    document.querySelector(
+      "#signin-form"
+    );
+
+  const signinMessage =
+    document.querySelector(
+      "#signin-message"
+    );
+
+  signinForm?.addEventListener(
+    "submit",
+    async (event) => {
+      event.preventDefault();
+
+      const email =
+        document.querySelector(
+          "#signin-email"
+        )?.value
+          .trim()
+          .toLowerCase();
+
+      if (
+        !email ||
+        !signinTurnstileToken
+      ) {
+        signinMessage.className =
+          "signin-message error";
+
+        signinMessage.textContent =
+          "Complete the email and security verification first.";
+
+        return;
+      }
+
+      const button =
+        document.querySelector(
+          "#signin-submit"
+        );
+
+      if (button) {
+        button.disabled = true;
+
+        button.textContent =
+          "Sending Secure Link...";
+      }
+
+      signinMessage.className =
+        "signin-message";
+
+      signinMessage.textContent =
+        "Sending your secure sign-in link...";
+
+      try {
+        const response =
+          await fetch(
+            "/api/auth/request-link",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                email,
+                turnstileToken:
+                  signinTurnstileToken
+              })
+            }
+          );
+
+        const result =
+          await response.json();
+
+        if (
+          !response.ok ||
+          !result.ok
+        ) {
+          throw new Error(
+            result.error ||
+            "Unable to send the sign-in link."
+          );
+        }
+
+        signinMessage.className =
+          "signin-message success";
+
+        signinMessage.textContent =
+          "Check your email for your secure sign-in link.";
+
+        signinTurnstileToken = "";
+
+        if (window.turnstile) {
+          window.turnstile.reset(
+            "#signin-turnstile"
+          );
+        }
+
+        if (button) {
+          button.textContent =
+            "Link Sent";
+        }
+
+      } catch (error) {
+        signinMessage.className =
+          "signin-message error";
+
+        signinMessage.textContent =
+          error.message;
+
+        signinTurnstileToken = "";
+
+        if (window.turnstile) {
+          window.turnstile.reset(
+            "#signin-turnstile"
+          );
+        }
+
+        if (button) {
+          button.disabled = true;
+
+          button.textContent =
+            "Send Secure Sign-In Link";
+        }
+      }
+    }
+  );
+</script>
       </body>
 
     </html>
