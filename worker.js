@@ -1727,10 +1727,14 @@ if (
             ca.household_id,
             ca.email,
 
-            h.household_number,
-            h.display_name,
-            h.status AS household_status
-
+           h.household_number,
+h.display_name,
+h.status AS household_status,
+h.address_line_1,
+h.address_line_2,
+h.city,
+h.state,
+h.postal_code
           FROM customer_sessions cs
 
           JOIN customer_accounts ca
@@ -1934,16 +1938,31 @@ if (
     return jsonResponse({
       ok: true,
 
-      household: {
-        householdNumber:
-          customer.household_number,
+     household: {
+  householdNumber:
+    customer.household_number,
 
-        displayName:
-          customer.display_name,
+  displayName:
+    customer.display_name,
 
-        status:
-          customer.household_status
-      },
+  status:
+    customer.household_status,
+
+  addressLine1:
+    customer.address_line_1,
+
+  addressLine2:
+    customer.address_line_2,
+
+  city:
+    customer.city,
+
+  state:
+    customer.state,
+
+  postalCode:
+    customer.postal_code
+},
 
       parents:
         results[0]?.results || [],
