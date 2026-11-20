@@ -1726,7 +1726,177 @@ if (
               color: var(--muted);
               line-height: 1.65;
             }
+.details-section {
+  margin-top: 20px;
+  padding: 23px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
 
+.details-section h2 {
+  margin: 0 0 6px;
+}
+
+.section-intro {
+  margin: 0 0 18px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.detail-card {
+  padding: 18px;
+  background: var(--panel-two);
+  border: 1px solid
+    rgba(193, 167, 255, 0.17);
+  border-radius: 16px;
+}
+
+.detail-card h3 {
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.detail-card h4 {
+  margin: 18px 0 8px;
+  color: var(--purple);
+}
+
+.detail-card p {
+  margin: 7px 0;
+  color: var(--muted);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.detail-card strong {
+  color: var(--text);
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 6px 9px;
+  color: #eee6ff;
+  background:
+    rgba(141, 99, 255, 0.13);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 850;
+}
+
+.primary-tag {
+  color: #ffffff;
+  background:
+    rgba(141, 99, 255, 0.32);
+}
+
+.vaccine-list {
+  display: grid;
+  gap: 11px;
+}
+
+.vaccine-record {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr) auto;
+  gap: 15px;
+  align-items: start;
+  padding: 16px;
+  background: var(--panel-two);
+  border: 1px solid
+    rgba(193, 167, 255, 0.17);
+  border-radius: 15px;
+}
+
+.vaccine-record h3 {
+  margin: 0 0 6px;
+}
+
+.vaccine-record p {
+  margin: 5px 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.vaccine-status {
+  display: inline-block;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-current {
+  color: #bfffd1;
+  background: rgba(42, 175, 84, 0.17);
+  border: 1px solid rgba(76, 220, 119, 0.32);
+}
+
+.status-expiring {
+  color: #ffeaa6;
+  background: rgba(223, 168, 28, 0.16);
+  border: 1px solid rgba(247, 196, 67, 0.34);
+}
+
+.status-expired {
+  color: #ffc1c1;
+  background: rgba(214, 57, 57, 0.17);
+  border: 1px solid rgba(244, 92, 92, 0.35);
+}
+
+.status-review {
+  color: #e1d2ff;
+  background: rgba(141, 99, 255, 0.18);
+  border: 1px solid rgba(193, 167, 255, 0.35);
+}
+
+.loading-panel,
+.empty-panel,
+.error-panel {
+  padding: 18px;
+  color: var(--muted);
+  background: var(--panel-two);
+  border: 1px solid
+    rgba(193, 167, 255, 0.16);
+  border-radius: 15px;
+}
+
+.error-panel {
+  color: #ffc1c1;
+  border-color: rgba(244, 92, 92, 0.35);
+}
+
+@media (max-width: 700px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vaccine-record {
+    grid-template-columns: 1fr;
+  }
+
+  .vaccine-status {
+    width: fit-content;
+  }
+}
             .summary-grid {
               display: grid;
               grid-template-columns:
@@ -1920,9 +2090,912 @@ if (
                 verified.
               </p>
             </section>
+<section class="details-section">
+  <h2>Pet Parents</h2>
 
+  <p class="section-intro">
+    Household members authorized to manage care
+    and receive updates.
+  </p>
+
+  <div
+    id="parent-list"
+    class="card-grid"
+  >
+    <div class="loading-panel">
+      Loading pet parents...
+    </div>
+  </div>
+</section>
+
+<section class="details-section">
+  <h2>Emergency Contacts</h2>
+
+  <p class="section-intro">
+    Contacts listed in priority order for
+    emergencies and authorized pickup.
+  </p>
+
+  <div
+    id="emergency-list"
+    class="card-grid"
+  >
+    <div class="loading-panel">
+      Loading emergency contacts...
+    </div>
+  </div>
+</section>
+
+<section class="details-section">
+  <h2>My Pets</h2>
+
+  <p class="section-intro">
+    Saved profiles, routines, care information,
+    and compatibility status.
+  </p>
+
+  <div
+    id="pet-list"
+    class="card-grid"
+  >
+    <div class="loading-panel">
+      Loading pets...
+    </div>
+  </div>
+</section>
+
+<section class="details-section">
+  <h2>Veterinary Care</h2>
+
+  <p class="section-intro">
+    Veterinary clinics connected to each pet.
+  </p>
+
+  <div
+    id="vet-list"
+    class="card-grid"
+  >
+    <div class="loading-panel">
+      Loading veterinary information...
+    </div>
+  </div>
+</section>
+
+<section class="details-section">
+  <h2>Vaccination Records</h2>
+
+  <p class="section-intro">
+    Vaccine status is calculated from the saved
+    expiration date. Records without an expiration
+    date require review.
+  </p>
+
+  <div
+    id="vaccine-list"
+    class="vaccine-list"
+  >
+    <div class="loading-panel">
+      Loading vaccination records...
+    </div>
+  </div>
+</section>
           </main>
+<script>
+  const portalText = (value, fallback = "Not provided") => {
+    if (
+      value === null ||
+      value === undefined ||
+      String(value).trim() === ""
+    ) {
+      return fallback;
+    }
 
+    return String(value);
+  };
+
+  const yesNo = (value) =>
+    Number(value) === 1 ? "Yes" : "No";
+
+  const titleWords = (value) =>
+    portalText(value)
+      .replaceAll("_", " ")
+      .replace(
+        /\b\w/g,
+        (letter) => letter.toUpperCase()
+      );
+
+  const formatPortalDate = (value) => {
+    if (!value) {
+      return "Not provided";
+    }
+
+    const date =
+      new Date(value + "T00:00:00");
+
+    if (Number.isNaN(date.getTime())) {
+      return portalText(value);
+    }
+
+    return date.toLocaleDateString(
+      "en-US",
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      }
+    );
+  };
+
+  function element(
+    tagName,
+    className,
+    text
+  ) {
+    const node =
+      document.createElement(tagName);
+
+    if (className) {
+      node.className = className;
+    }
+
+    if (
+      text !== undefined &&
+      text !== null
+    ) {
+      node.textContent =
+        String(text);
+    }
+
+    return node;
+  }
+
+  function informationLine(
+    label,
+    value
+  ) {
+    const paragraph =
+      element("p");
+
+    const strong =
+      element(
+        "strong",
+        "",
+        label + ": "
+      );
+
+    paragraph.append(strong);
+
+    paragraph.append(
+      document.createTextNode(
+        portalText(value)
+      )
+    );
+
+    return paragraph;
+  }
+
+  function addTag(
+    container,
+    text,
+    isPrimary = false
+  ) {
+    container.append(
+      element(
+        "span",
+        isPrimary
+          ? "tag primary-tag"
+          : "tag",
+        text
+      )
+    );
+  }
+
+  function showEmpty(
+    container,
+    message
+  ) {
+    container.replaceChildren(
+      element(
+        "div",
+        "empty-panel",
+        message
+      )
+    );
+  }
+
+  function renderParents(parents) {
+    const container =
+      document.querySelector(
+        "#parent-list"
+      );
+
+    if (!parents.length) {
+      showEmpty(
+        container,
+        "No pet parents have been added."
+      );
+      return;
+    }
+
+    const cards =
+      parents.map((parent) => {
+        const card =
+          element(
+            "article",
+            "detail-card"
+          );
+
+        card.append(
+          element(
+            "h3",
+            "",
+            portalText(parent.full_name)
+          ),
+
+          informationLine(
+            "Role",
+            parent.role
+          ),
+
+          informationLine(
+            "Email",
+            parent.email
+          ),
+
+          informationLine(
+            "Phone",
+            parent.phone
+          )
+        );
+
+        const tags =
+          element("div", "tag-row");
+
+        if (
+          Number(
+            parent.is_primary_contact
+          ) === 1
+        ) {
+          addTag(
+            tags,
+            "Primary Contact",
+            true
+          );
+        }
+
+        addTag(
+          tags,
+          "Can Request Care: " +
+            yesNo(
+              parent.can_request_care
+            )
+        );
+
+        addTag(
+          tags,
+          "Receives Updates: " +
+            yesNo(
+              parent.receives_updates
+            )
+        );
+
+        card.append(tags);
+
+        return card;
+      });
+
+    container.replaceChildren(
+      ...cards
+    );
+  }
+
+  function renderEmergencyContacts(
+    contacts
+  ) {
+    const container =
+      document.querySelector(
+        "#emergency-list"
+      );
+
+    if (!contacts.length) {
+      showEmpty(
+        container,
+        "No emergency contacts have been added."
+      );
+      return;
+    }
+
+    const cards =
+      contacts.map((contact) => {
+        const card =
+          element(
+            "article",
+            "detail-card"
+          );
+
+        card.append(
+          element(
+            "h3",
+            "",
+            portalText(contact.full_name)
+          ),
+
+          informationLine(
+            "Relationship",
+            contact.relationship
+          ),
+
+          informationLine(
+            "Priority",
+            contact.priority
+          ),
+
+          informationLine(
+            "Primary Phone",
+            contact.primary_phone
+          ),
+
+          informationLine(
+            "Alternate Phone",
+            contact.alternate_phone
+          ),
+
+          informationLine(
+            "Email",
+            contact.email
+          ),
+
+          informationLine(
+            "Notes",
+            contact.notes
+          )
+        );
+
+        const tags =
+          element("div", "tag-row");
+
+        addTag(
+          tags,
+          "Medical Decisions: " +
+            yesNo(
+              contact
+                .authorized_for_medical_decisions
+            )
+        );
+
+        addTag(
+          tags,
+          "Authorized Pickup: " +
+            yesNo(
+              contact
+                .authorized_for_pickup
+            )
+        );
+
+        card.append(tags);
+
+        return card;
+      });
+
+    container.replaceChildren(
+      ...cards
+    );
+  }
+
+  function renderPets(pets) {
+    const container =
+      document.querySelector(
+        "#pet-list"
+      );
+
+    if (!pets.length) {
+      showEmpty(
+        container,
+        "No pets have been added."
+      );
+      return;
+    }
+
+    const cards =
+      pets.map((pet) => {
+        const card =
+          element(
+            "article",
+            "detail-card"
+          );
+
+        card.append(
+          element(
+            "h3",
+            "",
+            portalText(pet.name)
+          ),
+
+          informationLine(
+            "Species",
+            titleWords(pet.species)
+          ),
+
+          informationLine(
+            "Breed",
+            pet.breed
+          ),
+
+          informationLine(
+            "Color / Markings",
+            pet.color_markings
+          ),
+
+          informationLine(
+            "Date of Birth",
+            formatPortalDate(
+              pet.date_of_birth
+            )
+          ),
+
+          informationLine(
+            "Sex",
+            titleWords(pet.sex)
+          ),
+
+          informationLine(
+            "Spayed / Neutered",
+            yesNo(
+              pet.spayed_neutered
+            )
+          ),
+
+          informationLine(
+            "Weight",
+            pet.weight_lbs
+              ? pet.weight_lbs + " lb"
+              : null
+          )
+        );
+
+        card.append(
+          element(
+            "h4",
+            "",
+            "Care & Routine"
+          ),
+
+          informationLine(
+            "Feeding",
+            pet.feeding_notes
+          ),
+
+          informationLine(
+            "Medications",
+            pet.medication_notes
+          ),
+
+          informationLine(
+            "Medical Notes",
+            pet.medical_notes
+          ),
+
+          informationLine(
+            "Allergies",
+            pet.allergy_notes
+          ),
+
+          informationLine(
+            "Behavior",
+            pet.behavior_notes
+          ),
+
+          informationLine(
+            "Routine",
+            pet.routine_notes
+          )
+        );
+
+        card.append(
+          element(
+            "h4",
+            "",
+            "Compatibility"
+          )
+        );
+
+        const tags =
+          element("div", "tag-row");
+
+        addTag(
+          tags,
+          "Dogs: " +
+            titleWords(
+              pet.dog_friendly
+            )
+        );
+
+        addTag(
+          tags,
+          "Cats: " +
+            titleWords(
+              pet.cat_friendly
+            )
+        );
+
+        addTag(
+          tags,
+          "Children: " +
+            titleWords(
+              pet.child_friendly
+            )
+        );
+
+        addTag(
+          tags,
+          "House Trained: " +
+            yesNo(
+              pet.house_trained
+            )
+        );
+
+        addTag(
+          tags,
+          "Crate Trained: " +
+            yesNo(
+              pet.crate_trained
+            )
+        );
+
+        addTag(
+          tags,
+          "Meet & Greet: " +
+            titleWords(
+              pet.meet_greet_status
+            ),
+          true
+        );
+
+        addTag(
+          tags,
+          "Compatibility: " +
+            titleWords(
+              pet.compatibility_status
+            )
+        );
+
+        addTag(
+          tags,
+          "Approval: " +
+            titleWords(
+              pet.approval_status
+            ),
+          true
+        );
+
+        card.append(tags);
+
+        return card;
+      });
+
+    container.replaceChildren(
+      ...cards
+    );
+  }
+
+  function renderVets(
+    relationships
+  ) {
+    const container =
+      document.querySelector(
+        "#vet-list"
+      );
+
+    if (!relationships.length) {
+      showEmpty(
+        container,
+        "No veterinary clinics have been linked."
+      );
+      return;
+    }
+
+    const cards =
+      relationships.map((vet) => {
+        const card =
+          element(
+            "article",
+            "detail-card"
+          );
+
+        card.append(
+          element(
+            "h3",
+            "",
+            portalText(vet.pet_name) +
+              " — " +
+              portalText(vet.clinic_name)
+          )
+        );
+
+        const address = [
+          vet.address_line_1,
+          vet.address_line_2,
+          vet.city,
+          vet.state,
+          vet.postal_code
+        ]
+          .filter(Boolean)
+          .join(", ");
+
+        card.append(
+          informationLine(
+            "Veterinarian",
+            vet.veterinarian_name
+          ),
+
+          informationLine(
+            "Relationship",
+            titleWords(
+              vet.relationship_type
+            )
+          ),
+
+          informationLine(
+            "Phone",
+            vet.phone
+          ),
+
+          informationLine(
+            "Emergency Phone",
+            vet.emergency_phone
+          ),
+
+          informationLine(
+            "Email",
+            vet.email
+          ),
+
+          informationLine(
+            "Address",
+            address
+          ),
+
+          informationLine(
+            "Permission to Contact",
+            yesNo(
+              vet.permission_to_contact
+            )
+          )
+        );
+
+        const tags =
+          element("div", "tag-row");
+
+        if (
+          Number(vet.is_primary) === 1
+        ) {
+          addTag(
+            tags,
+            "Primary Clinic",
+            true
+          );
+        }
+
+        addTag(
+          tags,
+          titleWords(vet.clinic_type)
+        );
+
+        card.append(tags);
+
+        return card;
+      });
+
+    container.replaceChildren(
+      ...cards
+    );
+  }
+
+  const vaccineStatusDetails = {
+    current: {
+      label: "Current",
+      className:
+        "vaccine-status status-current"
+    },
+
+    expiring_soon: {
+      label: "Expiring Soon",
+      className:
+        "vaccine-status status-expiring"
+    },
+
+    expired: {
+      label: "Expired",
+      className:
+        "vaccine-status status-expired"
+    },
+
+    needs_review: {
+      label: "Needs Review",
+      className:
+        "vaccine-status status-review"
+    }
+  };
+
+  function renderVaccinations(
+    records
+  ) {
+    const container =
+      document.querySelector(
+        "#vaccine-list"
+      );
+
+    if (!records.length) {
+      showEmpty(
+        container,
+        "No vaccination records have been added."
+      );
+      return;
+    }
+
+    const cards =
+      records.map((record) => {
+        const card =
+          element(
+            "article",
+            "vaccine-record"
+          );
+
+        const content =
+          element("div");
+
+        content.append(
+          element(
+            "h3",
+            "",
+            portalText(record.pet_name) +
+              " — " +
+              portalText(
+                record.vaccine_name
+              )
+          ),
+
+          informationLine(
+            "Administered",
+            formatPortalDate(
+              record.administered_date
+            )
+          ),
+
+          informationLine(
+            "Expires",
+            record.expiration_date
+              ? formatPortalDate(
+                  record.expiration_date
+                )
+              : "Not entered"
+          ),
+
+          informationLine(
+            "Clinic",
+            record.clinic_name
+          ),
+
+          informationLine(
+            "Veterinarian",
+            record.veterinarian_name
+          ),
+
+          informationLine(
+            "Verification",
+            titleWords(
+              record.verification_status
+            )
+          ),
+
+          informationLine(
+            "Notes",
+            record.notes
+          )
+        );
+
+        const status =
+          vaccineStatusDetails[
+            record.display_status
+          ] ||
+          vaccineStatusDetails
+            .needs_review;
+
+        card.append(
+          content,
+          element(
+            "span",
+            status.className,
+            status.label
+          )
+        );
+
+        return card;
+      });
+
+    container.replaceChildren(
+      ...cards
+    );
+  }
+
+  async function loadAccountDetails() {
+    try {
+      const response =
+        await fetch(
+          "/api/account-data",
+          {
+            credentials:
+              "same-origin",
+
+            headers: {
+              "Accept":
+                "application/json"
+            }
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+        throw new Error(
+          data.error ||
+          "Unable to load account details."
+        );
+      }
+
+      renderParents(
+        data.parents || []
+      );
+
+      renderEmergencyContacts(
+        data.emergencyContacts || []
+      );
+
+      renderPets(
+        data.pets || []
+      );
+
+      renderVets(
+        data.veterinaryRelationships ||
+        []
+      );
+
+      renderVaccinations(
+        data.vaccinations || []
+      );
+
+    } catch (error) {
+      const ids = [
+        "#parent-list",
+        "#emergency-list",
+        "#pet-list",
+        "#vet-list",
+        "#vaccine-list"
+      ];
+
+      for (const id of ids) {
+        const container =
+          document.querySelector(id);
+
+        if (container) {
+          container.replaceChildren(
+            element(
+              "div",
+              "error-panel",
+              "Unable to load this information right now."
+            )
+          );
+        }
+      }
+    }
+  }
+
+  loadAccountDetails();
+</script>
         </body>
       </html>
     `;
