@@ -824,7 +824,29 @@ if (
         400
       );
     }
+const turnstileToken =
+  typeof body.turnstileToken === "string"
+    ? body.turnstileToken
+    : "";
 
+const turnstileValid =
+  await verifyTurnstile(
+    turnstileToken,
+    request,
+    env
+  );
+
+if (!turnstileValid) {
+  return jsonResponse(
+    {
+      ok: false,
+      error:
+        "Security verification failed. Please try again."
+    },
+    400
+  );
+}
+    
     const account =
       await env.DB
         .prepare(`
