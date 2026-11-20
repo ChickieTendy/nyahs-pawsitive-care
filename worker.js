@@ -4402,7 +4402,78 @@ if (
   margin: 0;
   accent-color: var(--purple-strong);
 }
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 16px;
+}
 
+.secondary-button {
+  padding: 9px 13px;
+
+  color: var(--purple);
+
+  background:
+    rgba(141, 99, 255, 0.08);
+
+  border:
+    1px solid var(--border);
+
+  border-radius: 10px;
+
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  background:
+    rgba(141, 99, 255, 0.15);
+}
+
+.parent-edit-form {
+  display: grid;
+  gap: 11px;
+
+  margin-top: 16px;
+  padding-top: 16px;
+
+  border-top:
+    1px solid
+    rgba(193, 167, 255, 0.16);
+}
+
+.parent-edit-form[hidden] {
+  display: none;
+}
+
+.parent-edit-form label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.parent-edit-form input[type="text"],
+.parent-edit-form input[type="email"],
+.parent-edit-form input[type="tel"] {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 11px;
+
+  color: var(--text);
+  background: #0d0b12;
+
+  border:
+    1px solid
+    rgba(193, 167, 255, 0.22);
+
+  border-radius: 10px;
+
+  font: inherit;
+}
 @media (max-width: 700px) {
   .parent-form-grid {
     grid-template-columns: 1fr;
@@ -4927,91 +4998,440 @@ if (
   }
 
   function renderParents(parents) {
-    const container =
-      document.querySelector(
-        "#parent-list"
+  const container =
+    document.querySelector(
+      "#parent-list"
+    );
+
+  if (!parents.length) {
+    showEmpty(
+      container,
+      "No pet parents have been added."
+    );
+    return;
+  }
+
+  const cards =
+    parents.map((parent) => {
+      const card =
+        element(
+          "article",
+          "detail-card"
+        );
+
+      card.append(
+        element(
+          "h3",
+          "",
+          portalText(parent.full_name)
+        ),
+
+        informationLine(
+          "Role",
+          parent.role
+        ),
+
+        informationLine(
+          "Email",
+          parent.email
+        ),
+
+        informationLine(
+          "Phone",
+          parent.phone
+        )
       );
 
-    if (!parents.length) {
-      showEmpty(
-        container,
-        "No pet parents have been added."
+      const tags =
+        element("div", "tag-row");
+
+      if (
+        Number(
+          parent.is_primary_contact
+        ) === 1
+      ) {
+        addTag(
+          tags,
+          "Primary Contact",
+          true
+        );
+      }
+
+      addTag(
+        tags,
+        "Can Request Care: " +
+          yesNo(
+            parent.can_request_care
+          )
       );
-      return;
-    }
 
-    const cards =
-      parents.map((parent) => {
-        const card =
-          element(
-            "article",
-            "detail-card"
-          );
+      addTag(
+        tags,
+        "Receives Updates: " +
+          yesNo(
+            parent.receives_updates
+          )
+      );
 
-        card.append(
-          element(
-            "h3",
-            "",
-            portalText(parent.full_name)
-          ),
+      card.append(tags);
 
-          informationLine(
-            "Role",
-            parent.role
-          ),
+      /*
+       * Edit button
+       */
+      const actions =
+        element(
+          "div",
+          "card-actions"
+        );
 
-          informationLine(
-            "Email",
-            parent.email
-          ),
+      const editButton =
+        element(
+          "button",
+          "secondary-button",
+          "Edit"
+        );
 
-          informationLine(
-            "Phone",
-            parent.phone
+      editButton.type =
+        "button";
+
+      actions.append(editButton);
+
+      card.append(actions);
+
+      /*
+       * Editing form
+       */
+      const editForm =
+        e*ement(
+          "form",
+         *"parent-edit-form"
+        );
+
+   *  editForm.hidden = true;
+
+      c*nst createTextField = (
+        la*elText,
+        type,
+        valu*
+      ) => {
+        const label *
+          element("label");
+
+    *   label.append(
+          documen*.createTextNode(
+            label*ext
           )
         );
 
-        const tags =
-          element("div", "tag-row");
+      * const input =
+          document.*reateElement(
+            "input"
+*         );
 
-        if (
+        input.type = *ype;
+        input.value =
+       *  value || "";
+
+        label.appe*d(input);
+
+        return {
+          label,
+          input
+        };
+      };
+
+      const nameField =
+        createTextField(
+          "Full Name",
+          "text",
+          parent.full_name
+        );
+
+      const emailField =
+        createTextField(
+          "Email",
+          "email",
+          parent.email
+        );
+
+      const phoneField =
+        createTextField(
+          "Phone",
+          "tel",
+          parent.phone
+        );
+
+      const roleField =
+        createTextField(
+          "Role",
+          "text",
+          parent.role
+        );
+
+      editForm.append(
+        nameField.label,
+        emailField.label,
+        phoneField.label,
+        roleField.label
+      );
+
+      const options =
+        element(
+          "div",
+          "parent-options"
+        );
+
+      const createCheckbox = (
+        text,
+        checked
+      ) => {
+        const label =
+          element(
+            "label",
+            "checkbox-option"
+          );
+
+        const input =
+          document.createElement(
+            "input"
+          );
+
+        input.type = "checkbox";
+        input.checked = checked;
+
+        label.append(
+          input,
+          document.createTextNode(
+            text
+          )
+        );
+
+        return {
+          label,
+          input
+        };
+      };
+
+      const primaryField =
+        createCheckbox(
+          "Primary Contact",
           Number(
             parent.is_primary_contact
           ) === 1
-        ) {
-          addTag(
-            tags,
-            "Primary Contact",
-            true
-          );
+        );
+
+      const requestField =
+        createCheckbox(
+          "Can Request Care",
+          Number(
+            parent.can_request_care
+          ) === 1
+        );
+
+      const updatesField =
+        createCheckbox(
+          "Receives Updates",
+          Number(
+            parent.receives_updates
+          ) === 1
+        );
+
+      options.append(
+        primaryField.label,
+        requestField.label,
+        updatesField.label
+      );
+
+      editForm.append(options);
+
+      const saveButton =
+        element(
+          "button",
+          "portal-button",
+          "Save Changes"
+        );
+
+      saveButton.type =
+        "submit";
+
+      const editMessage =
+        element(
+          "p",
+          "portal-message"
+        );
+
+      editMessage.setAttribute(
+        "aria-live",
+        "polite"
+      );
+
+      editForm.append(
+        saveButton,
+        editMessage
+      );
+
+      /*
+       * Open/close editor.
+       */
+      editButton.addEventListener(
+        "click",
+        () => {
+          editForm.hidden =
+            !editForm.hidden;
+
+          editButton.textContent =
+            editForm.hidden
+              ? "Edit"
+              : "Cancel";
         }
+      );
 
-        addTag(
-          tags,
-          "Can Request Care: " +
-            yesNo(
-              parent.can_request_care
-            )
-        );
+      /*
+       * Save edited parent.
+       */
+      editForm.addEventListener(
+        "submit",
+        async (event) => {
+          event.preventDefault();
 
-        addTag(
-          tags,
-          "Receives Updates: " +
-            yesNo(
-              parent.receives_updates
-            )
-        );
+          const payload = {
+            fullName:
+              nameField.input
+                .value.trim(),
 
-        card.append(tags);
+            email:
+              emailField.input
+                .value
+                .trim()
+                .toLowerCase(),
 
-        return card;
-      });
+            phone:
+              phoneField.input
+                .value.trim(),
 
-    container.replaceChildren(
-      ...cards
-    );
-  }
+            role:
+              roleField.input
+                .value.trim(),
 
+            isPrimaryContact:
+              primaryField.input
+                .checked,
+
+            canRequestCare:
+              requestField.input
+                .checked,
+
+            receivesUpdates:
+              updatesField.input
+                .checked
+          };
+
+          if (
+            !payload.fullName ||
+            !payload.role
+          ) {
+            editMessage.className =
+              "portal-message error";
+
+            editMessage.textContent =
+              "Enter the person’s full name and role.";
+
+            return;
+          }
+
+          saveButton.disabled = true;
+
+          saveButton.textContent =
+            "Saving...";
+
+          editMessage.className =
+            "portal-message";
+
+          editMessage.textContent =
+            "Saving changes...";
+
+          try {
+            const response =
+              await fetch(
+                "/api/account/parents/" +
+                  encodeURIComponent(
+                    parent.id
+                  ),
+                {
+                  method: "PUT",
+
+                  headers: {
+                    "Content-Type":
+                      "application/json"
+                  },
+
+                  credentials:
+                    "same-origin",
+
+                  body:
+                    JSON.stringify(
+                      payload
+                    )
+                }
+              );
+
+            const result =
+              await response.json();
+
+            if (
+              !response.ok ||
+              !result.ok
+            ) {
+              throw new Error(
+                result.error ||
+                "Unable to update the pet parent."
+              );
+            }
+
+            editMessage.className =
+              "portal-message success";
+
+            editMessage.textContent =
+              "Pet parent updated.";
+
+            /*
+             * Refresh all account data so
+             * primary-contact changes are visible.
+             */
+            await loadAccountDetails();
+
+            window.setTimeout(
+              () => {
+                window.location.reload();
+              },
+              700
+            );
+
+          } catch (error) {
+            editMessage.className =
+              "portal-message error";
+
+            editMessage.textContent =
+              error.message;
+
+            saveButton.disabled =
+              false;
+
+            saveButton.textContent =
+              "Save Changes";
+          }
+        }
+      );
+
+      card.append(editForm);
+
+      return card;
+    });
+
+  container.replaceChildren(
+    ...cards
+  );
+}
   function renderEmergencyContacts(
     contacts
   ) {
