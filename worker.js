@@ -3908,7 +3908,119 @@ if (
 .portal-message.error {
   color: #ffc1c1;
 }
+.portal-editor {
+  margin: 18px 0;
+  padding: 16px;
 
+  background:
+    rgba(141, 99, 255, 0.06);
+
+  border:
+    1px solid
+    rgba(193, 167, 255, 0.20);
+
+  border-radius: 16px;
+}
+
+.portal-editor summary {
+  color: var(--purple);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.portal-editor[open] summary {
+  margin-bottom: 18px;
+}
+
+.parent-form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 13px;
+}
+
+.parent-form-grid label {
+  display: block;
+
+  color: var(--muted);
+
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.parent-form-grid input {
+  width: 100%;
+  margin-top: 7px;
+  padding: 12px 13px;
+
+  color: var(--text);
+  background: #0d0b12;
+
+  border:
+    1px solid
+    rgba(193, 167, 255, 0.22);
+
+  border-radius: 11px;
+
+  font: inherit;
+}
+
+.parent-form-grid input:focus {
+  outline: none;
+
+  border-color:
+    rgba(193, 167, 255, 0.65);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(141, 99, 255, 0.10);
+}
+
+.parent-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  margin: 18px 0;
+}
+
+.checkbox-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 9px 11px;
+
+  color: var(--muted);
+  background: var(--panel-two);
+
+  border:
+    1px solid
+    rgba(193, 167, 255, 0.16);
+
+  border-radius: 11px;
+
+  font-size: 0.83rem;
+  font-weight: 800;
+}
+
+.checkbox-option input {
+  width: auto;
+  margin: 0;
+  accent-color: var(--purple-strong);
+}
+
+@media (max-width: 700px) {
+  .parent-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .parent-options {
+    flex-direction: column;
+  }
+}
 @media (max-width: 700px) {
   .household-form-grid {
     grid-template-columns: 1fr;
@@ -4117,7 +4229,107 @@ if (
     Household members authorized to manage care
     and receive updates.
   </p>
+<details class="portal-editor">
 
+  <summary>
+    + Add Pet Parent
+  </summary>
+
+  <form id="parent-add-form">
+
+    <div class="parent-form-grid">
+
+      <label>
+        Full Name
+        <input
+          id="parent-full-name"
+          type="text"
+          maxlength="100"
+          autocomplete="name"
+          required
+        >
+      </label>
+
+      <label>
+        Email Address
+        <input
+          id="parent-email"
+          type="email"
+          maxlength="200"
+          autocomplete="email"
+        >
+      </label>
+
+      <label>
+        Phone Number
+        <input
+          id="parent-phone"
+          type="tel"
+          maxlength="40"
+          autocomplete="tel"
+        >
+      </label>
+
+      <label>
+        Role
+        <input
+          id="parent-role"
+          type="text"
+          maxlength="80"
+          value="Pet Parent"
+          required
+        >
+      </label>
+
+    </div>
+
+    <div class="parent-options">
+
+      <label class="checkbox-option">
+        <input
+          id="parent-primary"
+          type="checkbox"
+        >
+        Make primary contact
+      </label>
+
+      <label class="checkbox-option">
+        <input
+          id="parent-can-request"
+          type="checkbox"
+          checked
+        >
+        Can request care
+      </label>
+
+      <label class="checkbox-option">
+        <input
+          id="parent-receives-updates"
+          type="checkbox"
+          checked
+        >
+        Receives booking updates
+      </label>
+
+    </div>
+
+    <button
+      id="parent-add-submit"
+      type="submit"
+      class="portal-button"
+    >
+      Add Pet Parent
+    </button>
+
+    <p
+      id="parent-add-message"
+      class="portal-message"
+      aria-live="polite"
+    ></p>
+
+  </form>
+
+</details>
   <div
     id="parent-list"
     class="card-grid"
@@ -5204,6 +5416,198 @@ householdForm?.addEventListener(
 
         saveButton.textContent =
           "Save Household Information";
+      }
+    }
+  }
+);
+
+const parentAddForm =
+  document.querySelector(
+    "#parent-add-form"
+  );
+
+const parentAddMessage =
+  document.querySelector(
+    "#parent-add-message"
+  );
+
+parentAddForm?.addEventListener(
+  "submit",
+  async (event) => {
+    event.preventDefault();
+
+    const fullName =
+      document.querySelector(
+        "#parent-full-name"
+      )?.value.trim() || "";
+
+    const email =
+      document.querySelector(
+        "#parent-email"
+      )?.value
+        .trim()
+        .toLowerCase() || "";
+
+    const phone =
+      document.querySelector(
+        "#parent-phone"
+      )?.value.trim() || "";
+
+    const role =
+      document.querySelector(
+        "#parent-role"
+      )?.value.trim() || "";
+
+    const isPrimaryContact =
+      document.querySelector(
+        "#parent-primary"
+      )?.checked === true;
+
+    const canRequestCare =
+      document.querySelector(
+        "#parent-can-request"
+      )?.checked === true;
+
+    const receivesUpdates =
+      document.querySelector(
+        "#parent-receives-updates"
+      )?.checked === true;
+
+    if (!fullName || !role) {
+      parentAddMessage.className =
+        "portal-message error";
+
+      parentAddMessage.textContent =
+        "Enter the person’s full name and role.";
+
+      return;
+    }
+
+    const button =
+      document.querySelector(
+        "#parent-add-submit"
+      );
+
+    if (button) {
+      button.disabled = true;
+      button.textContent =
+        "Adding Pet Parent...";
+    }
+
+    parentAddMessage.className =
+      "portal-message";
+
+    parentAddMessage.textContent =
+      "Saving the new pet parent...";
+
+    try {
+      const response =
+        await fetch(
+          "/api/account/parents",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            credentials:
+              "same-origin",
+
+            body: JSON.stringify({
+              fullName,
+              email,
+              phone,
+              role,
+              isPrimaryContact,
+              canRequestCare,
+              receivesUpdates
+            })
+          }
+        );
+
+      const result =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !result.ok
+      ) {
+        throw new Error(
+          result.error ||
+          "Unable to add the pet parent."
+        );
+      }
+
+      parentAddMessage.className =
+        "portal-message success";
+
+      parentAddMessage.textContent =
+        result.isPrimaryContact
+          ? "Pet parent added as the primary contact."
+          : "Pet parent added.";
+
+      parentAddForm.reset();
+
+      const roleField =
+        document.querySelector(
+          "#parent-role"
+        );
+
+      if (roleField) {
+        roleField.value =
+          "Pet Parent";
+      }
+
+      const canRequestField =
+        document.querySelector(
+          "#parent-can-request"
+        );
+
+      const receivesUpdatesField =
+        document.querySelector(
+          "#parent-receives-updates"
+        );
+
+      if (canRequestField) {
+        canRequestField.checked = true;
+      }
+
+      if (receivesUpdatesField) {
+        receivesUpdatesField.checked =
+          true;
+      }
+
+      /*
+       * Refresh the authenticated household
+       * lists, including Pet Parents.
+       */
+      await loadAccountDetails();
+
+      /*
+       * Reload shortly afterward so the
+       * server-rendered summary count also updates.
+       */
+      window.setTimeout(
+        () => {
+          window.location.reload();
+        },
+        900
+      );
+
+    } catch (error) {
+      parentAddMessage.className =
+        "portal-message error";
+
+      parentAddMessage.textContent =
+        error.message;
+
+      if (button) {
+        button.disabled = false;
+
+        button.textContent =
+          "Add Pet Parent";
       }
     }
   }
