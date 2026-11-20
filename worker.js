@@ -1771,6 +1771,7 @@ h.postal_code
         env.DB
           .prepare(`
             SELECT
+            id,
               full_name,
               email,
               phone,
