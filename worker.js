@@ -2892,6 +2892,250 @@ if (
   }
 }
     /*
+ * Deactivate a pet parent belonging to
+ * the authenticated customer's household.
+ */
+if (
+  url.pathname.startsWith(
+*   "/api/account/parents/"
+  ) &&
+* request.method === "DELETE"
+) {
+ *const rawSession =
+    getCookieVa*ue(
+      request,
+      "__Host-n*c_session"
+    );
+
+  if (!rawSessi*n) {
+    return jsonResponse(
+    * {
+        ok: false,
+        erro*:
+          "Authentication requir*d."
+      },
+      401
+    );
+  }
+*  try {
+    const parentIdText =
+ *    url.pathname
+        .slice(
+ *        "/api/account/parents/"
+            .length
+        )
+        .trim();
+
+    const parentId =
+      Number(parentIdText);
+
+    if (
+      !Number.isInteger(parentId) ||
+      parentId < 1
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Invalid pet parent."
+        },
+        400
+      );
+    }
+
+    const sessionHash =
+      await sha256Hex(rawSession);
+
+    /*
+     * Resolve household from the
+     * authenticated session.
+     */
+    const account =
+      await *nv.DB
+        .prepare(`
+         *SELECT
+            ca.household_id*
+          FROM customer_sessions *s
+
+          JOIN customer_account* ca
+            ON ca.id = cs.acco*nt_id
+
+          WHERE cs.session_*ash = ?1
+            AND cs.revoke*_at IS NULL
+            AND cs.exp*res_at >
+              CURRENT_TIM*STAMP
+            AND ca.status = *active'
+
+          LIMIT 1
+        `)
+        .bind(sessionHash)
+        .first();
+
+    if (!account) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "The customer session is invalid or expired."
+        },
+        401
+      );
+    }
+
+    /*
+     * Ownership check.
+     */
+    const parent =
+      await e*v.DB
+        .prepare(`
+          *ELECT
+            id,
+            *ull_name,
+            is_primary_c*ntact
+
+          FROM household_me*bers
+
+          WHERE id = ?1
+    *       AND household_id = ?2
+     *      AND status = 'active'
+
+     *    LIMIT 1
+        `)
+        .bi*d(
+          parentId,
+          a*count.household_id
+        )
+        .first();
+
+    if (!parent) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Pet parent not found."
+        },
+        404
+      );
+    }
+
+    /*
+     * Never allow the household's only
+     * active primary contact to be removed.
+     */
+    if (
+      Number(
+        p*rent.is_primary_contact
+      ) ==* 1
+    ) {
+      const anotherPrim*ry =
+        await env.DB
+        * .prepare(`
+            SELECT id
+*            FROM household_members*
+            WHERE household_id = *1
+              AND status = 'acti*e'
+              AND is_primary_co*tact = 1
+              AND id <> ?*
+
+            LIMIT 1
+          `)*          .bind(
+            accou*t.household_id,
+            parentId
+          )
+          .first();
+
+      if (!anotherPrimary) {
+        return jsonResponse(
+          {
+            ok: false,
+            error:
+              "Choose another primary contact before removing this person."
+          },
+          409
+        );
+      }
+    }
+
+    /*
+     * Require at least one other active
+     * household member to remain.
+     */
+    const anotherActiveMember =
+      await env.DB
+        .prepare(`
+          SELECT id
+
+          FROM household_members
+
+          WHERE household_id = ?1
+            AND status = 'active'
+            AND id <> ?2
+
+          LIMIT 1
+        `)
+        .bind(
+          account.household_id,
+          parentId
+        )
+        .first();
+
+    if (!anotherActiveMember) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "A household must keep at least one active pet parent."
+        },
+        409
+      );
+    }
+
+    /*
+     * Deactivate rather than permanently delete.
+     */
+    await env.DB
+      .prepare(`
+        UPDATE household_members
+
+        SET
+          status = 'inactive',
+          is_primary_contact = 0,
+          can_request_care = 0,
+          receives_updates = 0,
+          updated_at =
+            CURRENT_TIMESTAMP
+
+        WHERE id = ?1
+          AND household_id = ?2
+          AND status = 'active'
+      `)
+      .bind(
+        parentId,
+        account.household_id
+      )
+      .run();
+
+    return jsonResponse({
+      ok: true,
+
+      parentId,
+
+      message:
+        "Pet parent removed from the active household."
+    });
+
+  } catch (error) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Unable to remove the pet parent right now."
+      },
+      500
+    );
+  }
+}
+    /*
  * Public customer sign-in and account creation page.
  */
 if (
