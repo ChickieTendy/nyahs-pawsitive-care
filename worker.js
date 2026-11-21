@@ -5054,7 +5054,47 @@ if (
     grid-template-columns: 1fr;
   }
 }
+.emergency-notes-label {
+  display: block;
+  margin: 18px 0;
 
+  color: var(--muted);
+
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.emergency-notes-label textarea {
+  width: 100%;
+  margin-top: 7px;
+  padding: 12px 13px;
+
+  min-height: 110px;
+  resize: vertical;
+
+  color: var(--text);
+  background: #0d0b12;
+
+  border:
+    1px solid
+    rgba(193, 167, 255, 0.22);
+
+  border-radius: 11px;
+
+  font: inherit;
+  line-height: 1.5;
+}
+
+.emergency-notes-label textarea:focus {
+  outline: none;
+
+  border-color:
+    rgba(193, 167, 255, 0.65);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(141, 99, 255, 0.10);
+}
             @media (max-width: 430px) {
               .summary-grid {
                 grid-template-columns: 1fr;
@@ -5375,7 +5415,130 @@ if (
     Contacts listed in priority order for
     emergencies and authorized pickup.
   </p>
+<details class="portal-editor">
 
+  <summary>
+    + Add Emergency Contact
+  </summary>
+
+  <form id="emergency-add-form">
+
+    <div class="parent-form-grid">
+
+      <label>
+        Full Name
+        <input
+          id="emergency-full-name"
+          type="text"
+          maxlength="100"
+          autocomplete="name"
+          required
+        >
+      </label>
+
+      <label>
+        Relationship
+        <input
+          id="emergency-relationship"
+          type="text"
+          maxlength="80"
+          placeholder="Friend, Neighbor, Family Member"
+        >
+      </label>
+
+      <label>
+        Primary Phone
+        <input
+          id="emergency-primary-phone"
+          type="tel"
+          maxlength="40"
+          autocomplete="tel"
+          required
+        >
+      </label>
+
+      <label>
+        Alternate Phone
+        <input
+          id="emergency-alternate-phone"
+          type="tel"
+          maxlength="40"
+        >
+      </label>
+
+      <label>
+        Email Address
+        <input
+          id="emergency-email"
+          type="email"
+          maxlength="200"
+          autocomplete="email"
+        >
+      </label>
+
+      <label>
+        Priority
+        <input
+          id="emergency-priority"
+          type="number"
+          min="1"
+          max="99"
+          value="1"
+          required
+        >
+      </label>
+
+    </div>
+
+    <div class="parent-options">
+
+      <label class="checkbox-option">
+        <input
+          id="emergency-medical"
+          type="checkbox"
+        >
+        Authorized for medical decisions
+      </label>
+
+      <label class="checkbox-option">
+        <input
+          id="emergency-pickup"
+          type="checkbox"
+        >
+        Authorized for pickup
+      </label>
+
+    </div>
+
+    <label class="emergency-notes-label">
+      Notes
+
+      <textarea
+        id="emergency-notes"
+        maxlength="1000"
+        rows="4"
+        placeholder="Anything Nyah should know about this contact"
+      ></textarea>
+    </label>
+
+    <button
+      id="emergency-add-submit"
+      type="submit"
+      class="portal-button"
+    >
+      Add Emergency Contact
+    </button>
+
+    <p
+      id="emergency-add-message"
+      class="portal-message"
+      aria-live="polite"
+    ></p>
+
+  </form>
+
+</details>
+ 
   <div
     id="emergency-list"
     class="card-grid"
@@ -7017,7 +7180,203 @@ parentAddForm?.addEventListener(
             })
           }
         );
+const emergencyAddForm =
+  document.querySelector(
+    "#emergency-add-form"
+  );
 
+const emergencyAddMessage =
+  document.querySelector(
+    "#emergency-add-message"
+  );
+
+emergencyAddForm?.addEventListener(
+  "submit",
+  async (event) => {
+    event.preventDefault();
+
+    const fullName =
+      document.querySelector(
+        "#emergency-full-name"
+      )?.value.trim() || "";
+
+    const relationship =
+      document.querySelector(
+        "#emergency-relationship"
+      )?.value.trim() || "";
+
+    const primaryPhone =
+      document.querySelector(
+        "#emergency-primary-phone"
+      )?.value.trim() || "";
+
+    const alternatePhone =
+      document.querySelector(
+        "#emergency-alternate-phone"
+      )?.value.trim() || "";
+
+    const email =
+      document.querySelector(
+        "#emergency-email"
+      )?.value
+        .trim()
+        .toLowerCase() || "";
+
+    const priority =
+      Number(
+        document.querySelector(
+          "#emergency-priority"
+        )?.value || 1
+      );
+
+    const authorizedForMedicalDecisions =
+      document.querySelector(
+        "#emergency-medical"
+      )?.checked === true;
+
+    const authorizedForPickup =
+      document.querySelector(
+        "#emergency-pickup"
+      )?.checked === true;
+
+    const notes =
+      document.querySelector(
+        "#emergency-notes"
+      )?.value.trim() || "";
+
+    if (
+      !fullName ||
+      !primaryPhone
+    ) {
+      emergencyAddMessage.className =
+        "portal-message error";
+
+      emergencyAddMessage.textContent =
+        "Enter the contact’s full name and primary phone number.";
+
+      return;
+    }
+
+    const button =
+      document.querySelector(
+        "#emergency-add-submit"
+      );
+
+    if (button) {
+      button.disabled = true;
+
+      button.textContent =
+        "Adding Contact...";
+    }
+
+    emergencyAddMessage.className =
+      "portal-message";
+
+    emergencyAddMessage.textContent =
+      "Saving emergency contact...";
+
+    try {
+      const response =
+        await fetch(
+          "/api/account/emergency-contacts",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            credentials:
+              "same-origin",
+
+            body: JSON.stringify({
+              fullName,
+              relationship,
+              primaryPhone,
+              alternatePhone,
+              email,
+              priority,
+              authorizedForMedicalDecisions,
+              authorizedForPickup,
+              notes
+            })
+          }
+        );
+
+      const responseText =
+        await response.text();
+
+      let result = null;
+
+      try {
+        result =
+          responseText
+            ? JSON.parse(responseText)
+            : null;
+      } catch {
+        result = null;
+      }
+
+      if (!result) {
+        throw new Error(
+          "Invalid server response. HTTP " +
+            response.status
+        );
+      }
+
+      if (
+        !response.ok ||
+        !result.ok
+      ) {
+        throw new Error(
+          result.error ||
+          "Unable to add the emergency contact."
+        );
+      }
+
+      emergencyAddMessage.className =
+        "portal-message success";
+
+      emergencyAddMessage.textContent =
+        "Emergency contact added.";
+
+      emergencyAddForm.reset();
+
+      const priorityField =
+        document.querySelector(
+          "#emergency-priority"
+        );
+
+      if (priorityField) {
+        priorityField.value = "1";
+      }
+
+      await loadAccountDetails();
+
+      window.setTimeout(
+        () => {
+          window.location.reload();
+        },
+        700
+      );
+
+    } catch (error) {
+      emergencyAddMessage.className =
+        "portal-message error";
+
+      emergencyAddMessage.textContent =
+        error.message;
+
+      if (button) {
+        button.disabled = false;
+
+        button.textContent =
+          "Add Emergency Contact";
+      }
+    }
+  }
+);
       const result =
         await response.json();
 
