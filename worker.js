@@ -7180,6 +7180,93 @@ parentAddForm?.addEventListener(
             })
           }
         );
+
+      const result =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !result.ok
+      ) {
+        throw new Error(
+          result.error ||
+          "Unable to add the pet parent."
+        );
+      }
+
+      parentAddMessage.className =
+        "portal-message success";
+
+      parentAddMessage.textContent =
+        result.isPrimaryContact
+          ? "Pet parent added as the primary contact."
+          : "Pet parent added.";
+
+      parentAddForm.reset();
+
+      const roleField =
+        document.querySelector(
+          "#parent-role"
+        );
+
+      if (roleField) {
+        roleField.value =
+          "Pet Parent";
+      }
+
+      const canRequestField =
+        document.querySelector(
+          "#parent-can-request"
+        );
+
+      const receivesUpdatesField =
+        document.querySelector(
+          "#parent-receives-updates"
+        );
+
+      if (canRequestField) {
+        canRequestField.checked = true;
+      }
+
+      if (receivesUpdatesField) {
+        receivesUpdatesField.checked =
+          true;
+      }
+
+      /*
+       * Refresh the authenticated household
+       * lists, including Pet Parents.
+       */
+      await loadAccountDetails();
+
+      /*
+       * Reload shortly afterward so the
+       * server-rendered summary count also updates.
+       */
+      window.setTimeout(
+        () => {
+          window.location.reload();
+        },
+        900
+      );
+
+    } catch (error) {
+      parentAddMessage.className =
+        "portal-message error";
+
+      parentAddMessage.textContent =
+        error.message;
+
+      if (button) {
+        button.disabled = false;
+
+        button.textContent =
+          "Add Pet Parent";
+      }
+    }
+  }
+);
+
 const emergencyAddForm =
   document.querySelector(
     "#emergency-add-form"
@@ -7373,91 +7460,6 @@ emergencyAddForm?.addEventListener(
 
         button.textContent =
           "Add Emergency Contact";
-      }
-    }
-  }
-);
-      const result =
-        await response.json();
-
-      if (
-        !response.ok ||
-        !result.ok
-      ) {
-        throw new Error(
-          result.error ||
-          "Unable to add the pet parent."
-        );
-      }
-
-      parentAddMessage.className =
-        "portal-message success";
-
-      parentAddMessage.textContent =
-        result.isPrimaryContact
-          ? "Pet parent added as the primary contact."
-          : "Pet parent added.";
-
-      parentAddForm.reset();
-
-      const roleField =
-        document.querySelector(
-          "#parent-role"
-        );
-
-      if (roleField) {
-        roleField.value =
-          "Pet Parent";
-      }
-
-      const canRequestField =
-        document.querySelector(
-          "#parent-can-request"
-        );
-
-      const receivesUpdatesField =
-        document.querySelector(
-          "#parent-receives-updates"
-        );
-
-      if (canRequestField) {
-        canRequestField.checked = true;
-      }
-
-      if (receivesUpdatesField) {
-        receivesUpdatesField.checked =
-          true;
-      }
-
-      /*
-       * Refresh the authenticated household
-       * lists, including Pet Parents.
-       */
-      await loadAccountDetails();
-
-      /*
-       * Reload shortly afterward so the
-       * server-rendered summary count also updates.
-       */
-      window.setTimeout(
-        () => {
-          window.location.reload();
-        },
-        900
-      );
-
-    } catch (error) {
-      parentAddMessage.className =
-        "portal-message error";
-
-      parentAddMessage.textContent =
-        error.message;
-
-      if (button) {
-        button.disabled = false;
-
-        button.textContent =
-          "Add Pet Parent";
       }
     }
   }
