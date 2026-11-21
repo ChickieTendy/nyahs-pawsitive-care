@@ -3140,6 +3140,293 @@ if (
     );
   }
 }
+/*
+ * Add an emergency contact to the
+ * authenticated customer's household.
+ */
+if (
+  url.pathname ===
+    "/api/account/emergency-contacts" &&
+  request.method === "POST"
+) {
+  const rawSession =
+    getCookieValue(
+      request,
+      "__Host-npc_session"
+    );
+
+  if (!rawSession) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Authentication required."
+      },
+      401
+    );
+  }
+
+  try {
+    const body =
+      await request.json();
+
+    const fullName =
+      typeof body.fullName === "string"
+        ? body.fullName
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 100)
+        : "";
+
+    const relationship =
+      typeof body.relationship === "string"
+        ? body.relationship
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 80)
+        : "";
+
+    const primaryPhone =
+      typeof body.primaryPhone === "string"
+        ? body.primaryPhone
+            .trim()
+            .slice(0, 40)
+        : "";
+
+    const alternatePhone =
+      typeof body.alternatePhone === "string"
+        ? body.alternatePhone
+            .trim()
+            .slice(0, 40)
+        : "";
+
+    const email =
+      typeof body.email === "string"
+        ? body.email
+            .trim()
+            .toLowerCase()
+            .slice(0, 200)
+        : "";
+
+    const priorityNumber =
+      Number(body.priority);
+
+    const priority =
+      Number.isInteger(
+        priorityNumber
+      ) &&
+      priorityNumber >= 1 &&
+      priorityNumber <= 99
+        ? priorityNumber
+        : 1;
+
+    const authorizedMedical =
+      body.authorizedForMedicalDecisions ===
+      true
+        ? 1
+        : 0;
+
+    const authorizedPickup =
+      body.authorizedForPickup === true
+        ? 1
+        : 0;
+
+    const notes =
+      typeof body.notes === "string"
+        ? body.notes
+            .trim()
+            .slice(0, 1000)
+        : "";
+
+    /*
+     * Validate submitted contact data.
+     */
+    if (
+      !fullName ||
+      fullName.length < 2
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter the emergency contact’s full name."
+        },
+        400
+      );
+    }
+
+    if (!primaryPhone) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter a primary phone number."
+        },
+        400
+      );
+    }
+
+    if (
+      primaryPhone
+        .replace(/\D/g, "")
+        .length < 7
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter a valid primary phone number."
+        },
+        400
+      );
+    }
+
+    if (
+      alternatePhone &&
+      alternatePhone
+        .replace(/\D/g, "")
+        .length < 7
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter a valid alternate phone number."
+        },
+        400
+      );
+    }
+
+    if (
+      email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter a valid email address."
+        },
+        400
+      );
+    }
+
+    /*
+     * Resolve the household from the
+     * authenticated session.
+     */
+    const sessionHash =
+      await sha256Hex(rawSession);
+
+    const account =
+      await env.DB
+        .prepare(`
+          SELECT
+            ca.household_id
+
+          FROM customer_sessions cs
+
+          JOIN customer_accounts ca
+            ON ca.id = cs.account_id
+
+          WHERE cs.session_hash = ?1
+            AND cs.revoked_at IS NULL
+            AND cs.expires_at >
+              CURRENT_TIMESTAMP
+            AND ca.status = 'active'
+
+          LIMIT 1
+        `)
+        .bind(sessionHash)
+        .first();
+
+    if (!account) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "The customer session is invalid or expired."
+        },
+        401
+      );
+    }
+
+    /*
+     * Add the contact only to the household
+     * resolved from this customer session.
+     */
+    const insertResult =
+      await env.DB
+        .prepare(`
+          INSERT INTO emergency_contacts (
+            household_id,
+            full_name,
+            relationship,
+            primary_phone,
+            alternate_phone,
+            email,
+            priority,
+            authorized_for_medical_decisions,
+            authorized_for_pickup,
+            notes,
+            created_at,
+            updated_at
+          )
+          VALUES (
+            ?1,
+            ?2,
+            ?3,
+            ?4,
+            ?5,
+            ?6,
+            ?7,
+            ?8,
+            ?9,
+            ?10,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+          )
+        `)
+        .bind(
+          account.household_id,
+          fullName,
+          relationship || null,
+          primaryPhone,
+          alternatePhone || null,
+          email || null,
+          priority,
+          authorizedMedical,
+          authorizedPickup,
+          notes || null
+        )
+        .run();
+
+    return jsonResponse(
+      {
+        ok: true,
+
+        contactId:
+          insertResult?.meta
+            ?.last_row_id || null,
+
+        message:
+          "Emergency contact added."
+      },
+      201
+    );
+
+  } catch (error) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Unable to add the emergency contact right now."
+      },
+      500
+    );
+  }
+}
+    
     /*
  * Public customer sign-in and account creation page.
  */
