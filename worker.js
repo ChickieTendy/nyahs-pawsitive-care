@@ -4997,7 +4997,7 @@ if (
     );
   }
 
- function renderParents(parents) {
+function renderParents(parents) {
   const container =
     document.querySelector(
       "#parent-list"
@@ -5008,6 +5008,7 @@ if (
       container,
       "No pet parents have been added."
     );
+
     return;
   }
 
@@ -5043,7 +5044,10 @@ if (
       );
 
       const tags =
-        element("div", "tag-row");
+        element(
+          "div",
+          "tag-row"
+        );
 
       if (
         Number(
@@ -5075,108 +5079,114 @@ if (
 
       card.append(tags);
 
-      const actions =
-        element(
-          "div",
-          "card-actions"
-        );
+      return card;
+    });
 
-      const editButton =
-        element(
-          "button",
-          "secondary-button",
-          "Edit"
-    const container =
-      document.querySelector(
-        "#emergency-list"
-      );
+  container.replaceChildren(
+    ...cards
+  );
+}
 
-    if (!contacts.length) {
-      showEmpty(
-        container,
-        "No emergency contacts have been added."
-      );
-      return;
-    }
-
-    const cards =
-      contacts.map((contact) => {
-        const card =
-          element(
-            "article",
-            "detail-card"
-          );
-
-        card.append(
-          element(
-            "h3",
-            "",
-            portalText(contact.full_name)
-          ),
-
-          informationLine(
-            "Relationship",
-            contact.relationship
-          ),
-
-          informationLine(
-            "Priority",
-            contact.priority
-          ),
-
-          informationLine(
-            "Primary Phone",
-            contact.primary_phone
-          ),
-
-          informationLine(
-            "Alternate Phone",
-            contact.alternate_phone
-          ),
-
-          informationLine(
-            "Email",
-            contact.email
-          ),
-
-          informationLine(
-            "Notes",
-            contact.notes
-          )
-        );
-
-        const tags =
-          element("div", "tag-row");
-
-        addTag(
-          tags,
-          "Medical Decisions: " +
-            yesNo(
-              contact
-                .authorized_for_medical_decisions
-            )
-        );
-
-        addTag(
-          tags,
-          "Authorized Pickup: " +
-            yesNo(
-              contact
-                .authorized_for_pickup
-            )
-        );
-
-        card.append(tags);
-
-        return card;
-      });
-
-    container.replaceChildren(
-      ...cards
+function renderEmergencyContacts(
+  contacts
+) {
+  const container =
+    document.querySelector(
+      "#emergency-list"
     );
+
+  if (!contacts.length) {
+    showEmpty(
+      container,
+      "No emergency contacts have been added."
+    );
+
+    return;
   }
 
-  function renderPets(pets) {
+  const cards =
+    contacts.map((contact) => {
+      const card =
+        element(
+          "article",
+          "detail-card"
+        );
+
+      card.append(
+        element(
+          "h3",
+          "",
+          portalText(
+            contact.full_name
+          )
+        ),
+
+        informationLine(
+          "Relationship",
+          contact.relationship
+        ),
+
+        informationLine(
+          "Priority",
+          contact.priority
+        ),
+
+        informationLine(
+          "Primary Phone",
+          contact.primary_phone
+        ),
+
+        informationLine(
+          "Alternate Phone",
+          contact.alternate_phone
+        ),
+
+        informationLine(
+          "Email",
+          contact.email
+        ),
+
+        informationLine(
+          "Notes",
+          contact.notes
+        )
+      );
+
+      const tags =
+        element(
+          "div",
+          "tag-row"
+        );
+
+      addTag(
+        tags,
+        "Medical Decisions: " +
+          yesNo(
+            contact
+              .authorized_for_medical_decisions
+          )
+      );
+
+      addTag(
+        tags,
+        "Authorized Pickup: " +
+          yesNo(
+            contact
+              .authorized_for_pickup
+          )
+      );
+
+      card.append(tags);
+
+      return card;
+    });
+
+  container.replaceChildren(
+    ...cards
+  );
+}
+
+ function renderPets(pets) {
     const container =
       document.querySelector(
         "#pet-list"
