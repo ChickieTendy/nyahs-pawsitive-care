@@ -2891,37 +2891,38 @@ if (
     );
   }
 }
-    /*
+   /*
  * Deactivate a pet parent belonging to
  * the authenticated customer's household.
  */
 if (
   url.pathname.startsWith(
-*   "/api/account/parents/"
+    "/api/account/parents/"
   ) &&
-* request.method === "DELETE"
+  request.method === "DELETE"
 ) {
- *const rawSession =
-    getCookieVa*ue(
+  const rawSession =
+    getCookieValue(
       request,
-      "__Host-n*c_session"
+      "__Host-npc_session"
     );
 
-  if (!rawSessi*n) {
+  if (!rawSession) {
     return jsonResponse(
-    * {
+      {
         ok: false,
-        erro*:
-          "Authentication requir*d."
+        error:
+          "Authentication required."
       },
       401
     );
   }
-*  try {
+
+  try {
     const parentIdText =
- *    url.pathname
+      url.pathname
         .slice(
- *        "/api/account/parents/"
+          "/api/account/parents/"
             .length
         )
         .trim();
@@ -2947,24 +2948,25 @@ if (
       await sha256Hex(rawSession);
 
     /*
-     * Resolve household from the
-     * authenticated session.
+     * Resolve the household from the
+     * authenticated customer session.
      */
     const account =
-      await *nv.DB
+      await env.DB
         .prepare(`
-         *SELECT
-            ca.household_id*
-          FROM customer_sessions *s
+          SELECT
+            ca.household_id
 
-          JOIN customer_account* ca
-            ON ca.id = cs.acco*nt_id
+          FROM customer_sessions cs
 
-          WHERE cs.session_*ash = ?1
-            AND cs.revoke*_at IS NULL
-            AND cs.exp*res_at >
-              CURRENT_TIM*STAMP
-            AND ca.status = *active'
+          JOIN customer_accounts ca
+            ON ca.id = cs.account_id
+
+          WHERE cs.session_hash = ?1
+            AND cs.revoked_at IS NULL
+            AND cs.expires_at >
+              CURRENT_TIMESTAMP
+            AND ca.status = 'active'
 
           LIMIT 1
         `)
@@ -2983,27 +2985,28 @@ if (
     }
 
     /*
-     * Ownership check.
+     * Confirm that this active Pet Parent
+     * belongs to the authenticated household.
      */
     const parent =
-      await e*v.DB
+      await env.DB
         .prepare(`
-          *ELECT
+          SELECT
             id,
-            *ull_name,
-            is_primary_c*ntact
+            full_name,
+            is_primary_contact
 
-          FROM household_me*bers
+          FROM household_members
 
           WHERE id = ?1
-    *       AND household_id = ?2
-     *      AND status = 'active'
+            AND household_id = ?2
+            AND status = 'active'
 
-     *    LIMIT 1
+          LIMIT 1
         `)
-        .bi*d(
+        .bind(
           parentId,
-          a*count.household_id
+          account.household_id
         )
         .first();
 
@@ -3019,27 +3022,30 @@ if (
     }
 
     /*
-     * Never allow the household's only
-     * active primary contact to be removed.
+     * Never remove the household's only
+     * active primary contact.
      */
     if (
       Number(
-        p*rent.is_primary_contact
-      ) ==* 1
+        parent.is_primary_contact
+      ) === 1
     ) {
-      const anotherPrim*ry =
+      const anotherPrimary =
         await env.DB
-        * .prepare(`
+          .prepare(`
             SELECT id
-*            FROM household_members*
-            WHERE household_id = *1
-              AND status = 'acti*e'
-              AND is_primary_co*tact = 1
-              AND id <> ?*
+
+            FROM household_members
+
+            WHERE household_id = ?1
+              AND status = 'active'
+              AND is_primary_contact = 1
+              AND id <> ?2
 
             LIMIT 1
-          `)*          .bind(
-            accou*t.household_id,
+          `)
+          .bind(
+            account.household_id,
             parentId
           )
           .first();
@@ -3057,8 +3063,8 @@ if (
     }
 
     /*
-     * Require at least one other active
-     * household member to remain.
+     * At least one other active household
+     * member must remain.
      */
     const anotherActiveMember =
       await env.DB
@@ -3091,7 +3097,8 @@ if (
     }
 
     /*
-     * Deactivate rather than permanently delete.
+     * Preserve the historical record by
+     * deactivating rather than deleting it.
      */
     await env.DB
       .prepare(`
@@ -3117,9 +3124,7 @@ if (
 
     return jsonResponse({
       ok: true,
-
       parentId,
-
       message:
         "Pet parent removed from the active household."
     });
