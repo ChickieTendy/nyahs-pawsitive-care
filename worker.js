@@ -2183,7 +2183,324 @@ if (
       401
     );
   }
-/*
+
+  try {
+    const body =
+      await request.json();
+
+    const fullName =
+      typeof body.fullName === "string"
+        ? body.fullName
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 100)
+        : "";
+
+    const email =
+      typeof body.email === "string"
+        ? body.email
+            .trim()
+            .toLowerCase()
+            .slice(0, 200)
+        : "";
+
+    const phone =
+      typeof body.phone === "string"
+        ? body.phone
+            .trim()
+            .slice(0, 40)
+        : "";
+
+    const role =
+      typeof body.role === "string"
+        ? body.role
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 80)
+        : "";
+
+    const requestedPrimary =
+      body.isPrimaryContact === true;
+
+    const canRequestCare =
+      body.canRequestCare !== false
+        ? 1
+        : 0;
+
+    const receivesUpdates =
+      body.receivesUpdates !== false
+        ? 1
+        : 0;
+
+    if (
+      !fullName ||
+      fullName.length < 2
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter the pet parent’s full name."
+        },
+        400
+      );
+    }
+
+    if (
+      email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter a valid email address."
+        },
+        400
+      );
+    }
+
+    if (
+      phone &&
+      phone.replace(/\D/g, "").length < 7
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter a valid phone number."
+        },
+        400
+      );
+    }
+
+    if (!role) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter the person’s role."
+        },
+        400
+      );
+    }
+
+    /*
+     * Resolve the household from the session.
+     * The browser does not choose household_id.
+     */
+    const sessionHash =
+      await sha256Hex(rawSession);
+
+    const account =
+      await env.DB
+        .prepare(`
+          SELECT
+            ca.household_id
+          FROM customer_sessions cs
+
+          JOIN customer_accounts ca
+            ON ca.id = cs.account_id
+
+          WHERE cs.session_hash = ?1
+            AND cs.revoked_at IS NULL
+            AND cs.expires_at >
+              CURRENT_TIMESTAMP
+            AND ca.status = 'active'
+
+          LIMIT 1
+        `)
+        .bind(sessionHash)
+        .first();
+
+    if (!account) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "The customer session is invalid or expired."
+        },
+        401
+      );
+    }
+
+    /*
+     * Avoid duplicate active household members
+     * using the same provided email address.
+     */
+    if (email) {
+      const duplicate =
+        await env.DB
+          .prepare(`
+            SELECT id
+            FROM household_members
+            WHERE household_id = ?1
+              AND LOWER(email) = ?2
+              AND status = 'active'
+            LIMIT 1
+          `)
+          .bind(
+            account.household_id,
+            email
+          )
+          .first();
+
+      if (duplicate) {
+        return jsonResponse(
+          {
+            ok: false,
+            error:
+              "An active pet parent with this email already exists in the household."
+          },
+          409
+        );
+      }
+    }
+
+    /*
+     * The first active member automatically
+     * becomes the primary contact.
+     */
+    const memberSummary =
+      await env.DB
+        .prepare(`
+          SELECT
+            COUNT(*) AS active_count,
+
+            SUM(
+              CASE
+                WHEN is_primary_contact = 1
+                THEN 1
+                ELSE 0
+              END
+            ) AS primary_count
+
+          FROM household_members
+          WHERE household_id = ?1
+            AND status = 'active'
+        `)
+        .bind(account.household_id)
+        .first();
+
+    const activeCount =
+      Number(
+        memberSummary?.active_count || 0
+      );
+
+    const primaryCount =
+      Number(
+        memberSummary?.primary_count || 0
+      );
+
+    const shouldBePrimary =
+      requestedPrimary ||
+      activeCount === 0 ||
+      primaryCount === 0;
+
+    const insertStatement =
+      env.DB
+        .prepare(`
+          INSERT INTO household_members (
+            household_id,
+            full_name,
+            email,
+            phone,
+            role,
+            is_primary_contact,
+            can_request_care,
+            receives_updates,
+            status,
+            created_at,
+            updated_at
+          )
+          VALUES (
+            ?1,
+            ?2,
+            ?3,
+            ?4,
+            ?5,
+            ?6,
+            ?7,
+            ?8,
+            'active',
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+          )
+        `)
+        .bind(
+          account.household_id,
+          fullName,
+          email || null,
+          phone || null,
+          role,
+          shouldBePrimary ? 1 : 0,
+          canRequestCare,
+          receivesUpdates
+        );
+
+    let insertResult;
+
+    if (shouldBePrimary) {
+      /*
+       * Transfer primary status and insert
+       * the new primary person atomically.
+       */
+      const batchResults =
+        await env.DB.batch([
+          env.DB
+            .prepare(`
+              UPDATE household_members
+              SET
+                is_primary_contact = 0,
+                updated_at =
+                  CURRENT_TIMESTAMP
+              WHERE household_id = ?1
+                AND status = 'active'
+            `)
+            .bind(
+              account.household_id
+            ),
+
+          insertStatement
+        ]);
+
+      insertResult =
+        batchResults[1];
+
+    } else {
+      insertResult =
+        await insertStatement.run();
+    }
+
+    return jsonResponse(
+      {
+        ok: true,
+
+        parentId:
+          insertResult?.meta
+            ?.last_row_id || null,
+
+        message:
+          "Pet parent added.",
+
+        isPrimaryContact:
+          shouldBePrimary
+      },
+      201
+    );
+
+  } catch (error) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Unable to add the pet parent right now."
+      },
+      500
+    );
+  }
+}
+    /*
  * Edit a pet parent belonging to the
  * authenticated customer's household.
  */
@@ -2569,322 +2886,6 @@ if (
         ok: false,
         error:
           "Unable to update the pet parent right now."
-      },
-      500
-    );
-  }
-}
-  try {
-    const body =
-      await request.json();
-
-    const fullName =
-      typeof body.fullName === "string"
-        ? body.fullName
-            .trim()
-            .replace(/\s+/g, " ")
-            .slice(0, 100)
-        : "";
-
-    const email =
-      typeof body.email === "string"
-        ? body.email
-            .trim()
-            .toLowerCase()
-            .slice(0, 200)
-        : "";
-
-    const phone =
-      typeof body.phone === "string"
-        ? body.phone
-            .trim()
-            .slice(0, 40)
-        : "";
-
-    const role =
-      typeof body.role === "string"
-        ? body.role
-            .trim()
-            .replace(/\s+/g, " ")
-            .slice(0, 80)
-        : "";
-
-    const requestedPrimary =
-      body.isPrimaryContact === true;
-
-    const canRequestCare =
-      body.canRequestCare !== false
-        ? 1
-        : 0;
-
-    const receivesUpdates =
-      body.receivesUpdates !== false
-        ? 1
-        : 0;
-
-    if (
-      !fullName ||
-      fullName.length < 2
-    ) {
-      return jsonResponse(
-        {
-          ok: false,
-          error:
-            "Enter the pet parent’s full name."
-        },
-        400
-      );
-    }
-
-    if (
-      email &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    ) {
-      return jsonResponse(
-        {
-          ok: false,
-          error:
-            "Enter a valid email address."
-        },
-        400
-      );
-    }
-
-    if (
-      phone &&
-      phone.replace(/\D/g, "").length < 7
-    ) {
-      return jsonResponse(
-        {
-          ok: false,
-          error:
-            "Enter a valid phone number."
-        },
-        400
-      );
-    }
-
-    if (!role) {
-      return jsonResponse(
-        {
-          ok: false,
-          error:
-            "Enter the person’s role."
-        },
-        400
-      );
-    }
-
-    /*
-     * Resolve the household from the session.
-     * The browser does not choose household_id.
-     */
-    const sessionHash =
-      await sha256Hex(rawSession);
-
-    const account =
-      await env.DB
-        .prepare(`
-          SELECT
-            ca.household_id
-          FROM customer_sessions cs
-
-          JOIN customer_accounts ca
-            ON ca.id = cs.account_id
-
-          WHERE cs.session_hash = ?1
-            AND cs.revoked_at IS NULL
-            AND cs.expires_at >
-              CURRENT_TIMESTAMP
-            AND ca.status = 'active'
-
-          LIMIT 1
-        `)
-        .bind(sessionHash)
-        .first();
-
-    if (!account) {
-      return jsonResponse(
-        {
-          ok: false,
-          error:
-            "The customer session is invalid or expired."
-        },
-        401
-      );
-    }
-
-    /*
-     * Avoid duplicate active household members
-     * using the same provided email address.
-     */
-    if (email) {
-      const duplicate =
-        await env.DB
-          .prepare(`
-            SELECT id
-            FROM household_members
-            WHERE household_id = ?1
-              AND LOWER(email) = ?2
-              AND status = 'active'
-            LIMIT 1
-          `)
-          .bind(
-            account.household_id,
-            email
-          )
-          .first();
-
-      if (duplicate) {
-        return jsonResponse(
-          {
-            ok: false,
-            error:
-              "An active pet parent with this email already exists in the household."
-          },
-          409
-        );
-      }
-    }
-
-    /*
-     * The first active member automatically
-     * becomes the primary contact.
-     */
-    const memberSummary =
-      await env.DB
-        .prepare(`
-          SELECT
-            COUNT(*) AS active_count,
-
-            SUM(
-              CASE
-                WHEN is_primary_contact = 1
-                THEN 1
-                ELSE 0
-              END
-            ) AS primary_count
-
-          FROM household_members
-          WHERE household_id = ?1
-            AND status = 'active'
-        `)
-        .bind(account.household_id)
-        .first();
-
-    const activeCount =
-      Number(
-        memberSummary?.active_count || 0
-      );
-
-    const primaryCount =
-      Number(
-        memberSummary?.primary_count || 0
-      );
-
-    const shouldBePrimary =
-      requestedPrimary ||
-      activeCount === 0 ||
-      primaryCount === 0;
-
-    const insertStatement =
-      env.DB
-        .prepare(`
-          INSERT INTO household_members (
-            household_id,
-            full_name,
-            email,
-            phone,
-            role,
-            is_primary_contact,
-            can_request_care,
-            receives_updates,
-            status,
-            created_at,
-            updated_at
-          )
-          VALUES (
-            ?1,
-            ?2,
-            ?3,
-            ?4,
-            ?5,
-            ?6,
-            ?7,
-            ?8,
-            'active',
-            CURRENT_TIMESTAMP,
-            CURRENT_TIMESTAMP
-          )
-        `)
-        .bind(
-          account.household_id,
-          fullName,
-          email || null,
-          phone || null,
-          role,
-          shouldBePrimary ? 1 : 0,
-          canRequestCare,
-          receivesUpdates
-        );
-
-    let insertResult;
-
-    if (shouldBePrimary) {
-      /*
-       * Transfer primary status and insert
-       * the new primary person atomically.
-       */
-      const batchResults =
-        await env.DB.batch([
-          env.DB
-            .prepare(`
-              UPDATE household_members
-              SET
-                is_primary_contact = 0,
-                updated_at =
-                  CURRENT_TIMESTAMP
-              WHERE household_id = ?1
-                AND status = 'active'
-            `)
-            .bind(
-              account.household_id
-            ),
-
-          insertStatement
-        ]);
-
-      insertResult =
-        batchResults[1];
-
-    } else {
-      insertResult =
-        await insertStatement.run();
-    }
-
-    return jsonResponse(
-      {
-        ok: true,
-
-        parentId:
-          insertResult?.meta
-            ?.last_row_id || null,
-
-        message:
-          "Pet parent added.",
-
-        isPrimaryContact:
-          shouldBePrimary
-      },
-      201
-    );
-
-  } catch (error) {
-    return jsonResponse(
-      {
-        ok: false,
-        error:
-          "Unable to add the pet parent right now."
       },
       500
     );
