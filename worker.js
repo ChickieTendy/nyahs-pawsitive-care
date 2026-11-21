@@ -4683,7 +4683,36 @@ if (
   background:
     rgba(141, 99, 255, 0.15);
 }
+.danger-button {
+  padding: 9px 13px;
 
+  color: #ffc1c1;
+
+  background:
+    rgba(214, 57, 57, 0.10);
+
+  border:
+    1px solid
+    rgba(244, 92, 92, 0.35);
+
+  border-radius: 10px;
+
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+
+  cursor: pointer;
+}
+
+.danger-button:hover {
+  background:
+    rgba(214, 57, 57, 0.18);
+}
+
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
 .parent-edit-form {
   display: grid;
   gap: 11px;
@@ -5520,7 +5549,119 @@ function renderParents(parents) {
         saveButton,
         editMessage
       );
+const removeButton =
+  element(
+    "button",
+    "danger-button",
+    "Remove from Household"
+  );
 
+removeButton.type =
+  "button";
+
+editForm.append(
+  removeButton
+);
+removeButton.addEventListener(
+  "click",
+  async () => {
+    const confirmed =
+      window.confirm(
+        "Remove this person from the active household? Their historical record will be kept."
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    removeButton.disabled =
+      true;
+
+    removeButton.textContent =
+      "Removing...";
+
+    editMessage.className =
+      "portal-message";
+
+    editMessage.textContent =
+      "Removing pet parent...";
+
+    try {
+      const response =
+        await fetch(
+          "/api/account/parents/" +
+            encodeURIComponent(
+              parent.id
+            ),
+          {
+            method: "DELETE",
+
+            credentials:
+              "same-origin"
+          }
+        );
+
+      const responseText =
+        await response.text();
+
+      let result = null;
+
+      try {
+        result =
+          responseText
+            ? JSON.parse(responseText)
+            : null;
+      } catch {
+        result = null;
+      }
+
+      if (!result) {
+        throw new Error(
+          "Invalid server response. HTTP " +
+            response.status
+        );
+      }
+
+      if (
+        !response.ok ||
+        !result.ok
+      ) {
+        throw new Error(
+          result.error ||
+          "Unable to remove the pet parent."
+        );
+      }
+
+      editMessage.className =
+        "portal-message success";
+
+      editMessage.textContent =
+        "Pet parent removed from the active household.";
+
+      await loadAccountDetails();
+
+      window.setTimeout(
+        () => {
+          window.location.reload();
+        },
+        700
+      );
+
+    } catch (error) {
+      editMessage.className =
+        "portal-message error";
+
+      editMessage.textContent =
+        error.message;
+
+      removeButton.disabled =
+        false;
+
+      removeButton.textContent =
+        "Remove from Household";
+    }
+  }
+);
       editButton.addEventListener(
         "click",
         () => {
