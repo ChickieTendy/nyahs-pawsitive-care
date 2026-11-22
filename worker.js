@@ -5809,7 +5809,49 @@ WHERE household_id = ?1
 
   font: inherit;
 }
+/*
+ * ============================================================
+ * ADD PET FORM STYLES
+ * Select menus and Breed / Mix help text.
+ * ============================================================
+ */
 
+.parent-form-grid select {
+  width: 100%;
+  margin-top: 7px;
+  padding: 12px 13px;
+
+  color: var(--text);
+  background: #0d0b12;
+
+  border:
+    1px solid
+    rgba(193, 167, 255, 0.22);
+
+  border-radius: 11px;
+
+  font: inherit;
+}
+
+.parent-form-grid select:focus {
+  outline: none;
+
+  border-color:
+    rgba(193, 167, 255, 0.65);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(141, 99, 255, 0.10);
+}
+
+.breed-help {
+  margin: 12px 0 18px;
+
+  color: var(--muted);
+
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
 .parent-form-grid input:focus {
   outline: none;
 
@@ -6471,6 +6513,225 @@ WHERE household_id = ?1
     Saved profiles, routines, care information,
     and compatibility status.
   </p>
+<!--
+  ============================================================
+  ADD PET FORM
+  Customer pet profile creation.
+  ============================================================
+-->
+<details class="portal-editor">
+
+  <summary>
+    + Add Pet
+  </summary>
+
+  <form id="pet-add-form">
+
+    <!--
+      --------------------------------------------------------
+      BASIC PET INFORMATION
+      --------------------------------------------------------
+    -->
+    <div class="parent-form-grid">
+
+      <label>
+        Pet Name
+        <input
+          id="pet-name"
+          type="text"
+          maxlength="100"
+          autocomplete="off"
+          required
+        >
+      </label>
+
+      <label>
+        Species
+        <select
+          id="pet-species"
+          required
+        >
+          <option value="">
+            Choose species
+          </option>
+
+          <option value="dog">
+            Dog
+          </option>
+
+          <option value="cat">
+            Cat
+          </option>
+
+          <option value="other">
+            Other
+          </option>
+        </select>
+      </label>
+
+
+      <!--
+        ------------------------------------------------------
+        SEARCHABLE BREED OR MIX FIELD
+        Suggestions will change based on species.
+        Customers may still type a custom answer.
+        ------------------------------------------------------
+      -->
+      <label>
+        Breed / Mix
+
+        <input
+          id="pet-breed"
+          type="text"
+          maxlength="200"
+          autocomplete="off"
+          list="pet-breed-suggestions"
+          placeholder="Type or select a breed or mix"
+        >
+
+        <datalist
+          id="pet-breed-suggestions"
+        ></datalist>
+      </label>
+
+
+      <label>
+        Color / Markings
+        <input
+          id="pet-color-markings"
+          type="text"
+          maxlength="200"
+          autocomplete="off"
+          placeholder="Example: Black with white chest"
+        >
+      </label>
+
+
+      <!--
+        ------------------------------------------------------
+        BIRTH INFORMATION
+        ------------------------------------------------------
+      -->
+      <label>
+        Date of Birth
+        <input
+          id="pet-date-of-birth"
+          type="date"
+        >
+      </label>
+
+      <label class="checkbox-option">
+        <input
+          id="pet-approximate-birth-date"
+          type="checkbox"
+        >
+        Birth date is approximate
+      </label>
+
+
+      <!--
+        ------------------------------------------------------
+        SEX AND PHYSICAL INFORMATION
+        ------------------------------------------------------
+      -->
+      <label>
+        Sex
+
+        <select id="pet-sex">
+
+          <option value="">
+            Choose
+          </option>
+
+          <option value="female">
+            Female
+          </option>
+
+          <option value="male">
+            Male
+          </option>
+
+          <option value="unknown">
+            Unknown
+          </option>
+
+        </select>
+      </label>
+
+
+      <label>
+        Spayed / Neutered
+
+        <select id="pet-spayed-neutered">
+
+          <option value="">
+            Unknown / Not provided
+          </option>
+
+          <option value="yes">
+            Yes
+          </option>
+
+          <option value="no">
+            No
+          </option>
+
+        </select>
+      </label>
+
+
+      <label>
+        Weight (lb)
+
+        <input
+          id="pet-weight"
+          type="number"
+          min="0.1"
+          max="500"
+          step="0.1"
+          inputmode="decimal"
+          placeholder="Example: 58.5"
+        >
+      </label>
+
+
+      <label>
+        Microchip Number
+
+        <input
+          id="pet-microchip"
+          type="text"
+          maxlength="100"
+          autocomplete="off"
+          placeholder="Optional"
+        >
+      </label>
+
+    </div>
+
+
+    <!--
+      --------------------------------------------------------
+      BREED FIELD HELP
+      --------------------------------------------------------
+    -->
+    <p class="breed-help">
+      Start typing to see breed suggestions.
+      You can also enter a mixed breed, known crossbreed,
+      or custom breed description.
+    </p>
+
+
+    <!--
+      --------------------------------------------------------
+      ADDITIONAL PET SECTIONS WILL GO HERE
+      Care, medical, behavior, training and compatibility.
+      --------------------------------------------------------
+    -->
+
+  </form>
+
+</details>
 
   <div
     id="pet-list"
