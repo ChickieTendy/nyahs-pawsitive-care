@@ -1802,10 +1802,11 @@ h.postal_code
               authorized_for_pickup,
               notes
             FROM emergency_contacts
-            WHERE household_id = ?1
-            ORDER BY
-              priority ASC,
-              full_name ASC
+WHERE household_id = ?1
+  AND status = 'active'
+ORDER BY
+  priority ASC,
+  full_name ASC
           `)
           .bind(customer.household_id),
 
@@ -3658,12 +3659,13 @@ if (
         .prepare(`
           SELECT id
 
-          FROM emergency_contacts
+         FROM emergency_contacts
 
-          WHERE id = ?1
-            AND household_id = ?2
+WHERE id = ?1
+  AND household_id = ?2
+  AND status = 'active'
 
-          LIMIT 1
+LIMIT 1
         `)
         .bind(
           contactId,
@@ -3699,8 +3701,9 @@ if (
           updated_at =
             CURRENT_TIMESTAMP
 
-        WHERE id = ?10
-          AND household_id = ?11
+      WHERE id = ?10
+  AND household_id = ?11
+  AND status = 'active'
       `)
       .bind(
         fullName,
@@ -4648,8 +4651,9 @@ if (
 
             (
               SELECT COUNT(*)
-              FROM emergency_contacts
-              WHERE household_id = ?1
+             FROM emergency_contacts
+WHERE household_id = ?1
+  AND status = 'active'
             ) AS emergency_contact_count,
 
             (
