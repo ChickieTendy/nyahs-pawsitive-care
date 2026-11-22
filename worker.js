@@ -3740,6 +3740,159 @@ LIMIT 1
     );
   }
 }
+
+    if (
+  url.pathname.startsWith(
+    "/api/account/emergency-contacts/"
+  ) &&
+  request.method === "DELETE"
+) {
+  const rawSession =
+    getCookieValue(
+      request,
+      "__Host-npc_session"
+    );
+
+  if (!rawSession) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Authentication required."
+      },
+      401
+    );
+  }
+
+  try {
+    const contactIdText =
+      url.pathname
+        .slice(
+          "/api/account/emergency-contacts/"
+            .length
+        )
+        .trim();
+
+    const contactId =
+      Number(contactIdText);
+
+    if (
+      !Number.isInteger(contactId) ||
+      contactId < 1
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Invalid emergency contact."
+        },
+        400
+      );
+    }
+
+    const sessionHash =
+      await sha256Hex(rawSession);
+
+    const account =
+      await env.DB
+        .prepare(`
+          SELECT
+            ca.household_id
+
+          FROM customer_sessions cs
+
+          JOIN customer_accounts ca
+            ON ca.id = cs.account_id
+
+          WHERE cs.session_hash = ?1
+            AND cs.revoked_at IS NULL
+            AND cs.expires_at >
+              CURRENT_TIMESTAMP
+            AND ca.status = 'active'
+
+          LIMIT 1
+        `)
+        .bind(sessionHash)
+        .first();
+
+    if (!account) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "The customer session is invalid or expired."
+        },
+        401
+      );
+    }
+
+    const contact =
+      await env.DB
+        .prepare(`
+          SELECT id
+
+          FROM emergency_contacts
+
+          WHERE id = ?1
+            AND household_id = ?2
+            AND status = 'active'
+
+          LIMIT 1
+        `)
+        .bind(
+          contactId,
+          account.household_id
+        )
+        .first();
+
+    if (!contact) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Emergency contact not found."
+        },
+        404
+      );
+    }
+
+    await env.DB
+      .prepare(`
+        UPDATE emergency_contacts
+
+        SET
+          status = 'inactive',
+          updated_at =
+            CURRENT_TIMESTAMP
+
+        WHERE id = ?1
+          AND household_id = ?2
+          AND status = 'active'
+      `)
+      .bind(
+        contactId,
+        account.household_id
+      )
+      .run();
+
+    return jsonResponse({
+      ok: true,
+      contactId,
+      message:
+        "Emergency contact removed from the active household."
+    });
+
+  } catch (error) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Unable to remove the emergency contact right now."
+      },
+      500
+    );
+  }
+}
     /*
  * Public customer sign-in and account creation page.
  */
