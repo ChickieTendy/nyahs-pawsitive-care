@@ -6668,31 +6668,39 @@ function renderEmergencyContacts(
           )
       );
 
-     card.append(tags);
+      card.append(tags);
 
-const actions =
-  element(
-    "div",
-    "card-actions"
+      const actions =
+        element(
+          "div",
+          "card-actions"
+        );
+
+      const editButton =
+        element(
+          "button",
+          "secondary-button",
+          "Edit"
+        );
+
+      editButton.type =
+        "button";
+
+      actions.append(
+        editButton
+      );
+
+      card.append(
+        actions
+      );
+
+      return card;
+    });
+
+  container.replaceChildren(
+    ...cards
   );
-
-const editButton =
-  element(
-    "button",
-    "secondary-button",
-    "Edit"
-  );
-
-editButton.type =
-  "button";
-
-actions.append(
-  editButton
-);
-
-card.append(
-  actions
-);
+}
 
  function renderPets(pets) {
     const container =
