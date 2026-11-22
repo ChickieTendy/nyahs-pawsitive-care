@@ -6693,7 +6693,237 @@ function renderEmergencyContacts(
       card.append(
         actions
       );
+const contactEditForm =
+  element(
+    "form",
+    "parent-edit-form"
+  );
 
+contactEditForm.hidden = true;
+
+const createContactEditField = (
+  labelText,
+  type,
+  value
+) => {
+  const label =
+    element("label");
+
+  label.append(
+    document.createTextNode(
+      labelText
+    )
+  );
+
+  const input =
+    document.createElement(
+      "input"
+    );
+
+  input.type = type;
+  input.value = value || "";
+
+  label.append(input);
+
+  return {
+    label,
+    input
+  };
+};
+
+const contactNameField =
+  createContactEditField(
+    "Full Name",
+    "text",
+    contact.full_name
+  );
+
+const contactRelationshipField =
+  createContactEditField(
+    "Relationship",
+    "text",
+    contact.relationship
+  );
+
+const contactPrimaryPhoneField =
+  createContactEditField(
+    "Primary Phone",
+    "tel",
+    contact.primary_phone
+  );
+
+const contactAlternatePhoneField =
+  createContactEditField(
+    "Alternate Phone",
+    "tel",
+    contact.alternate_phone
+  );
+
+const contactEmailField =
+  createContactEditField(
+    "Email",
+    "email",
+    contact.email
+  );
+
+const contactPriorityField =
+  createContactEditField(
+    "Priority",
+    "number",
+    contact.priority
+  );
+
+contactPriorityField.input.min =
+  "1";
+
+contactPriorityField.input.max =
+  "99";
+
+contactEditForm.append(
+  contactNameField.label,
+  contactRelationshipField.label,
+  contactPrimaryPhoneField.label,
+  contactAlternatePhoneField.label,
+  contactEmailField.label,
+  contactPriorityField.label
+);
+
+const contactOptions =
+  element(
+    "div",
+    "parent-options"
+  );
+
+const createContactEditCheckbox = (
+  text,
+  checked
+) => {
+  const label =
+    element(
+      "label",
+      "checkbox-option"
+    );
+
+  const input =
+    document.createElement(
+      "input"
+    );
+
+  input.type = "checkbox";
+  input.checked = checked;
+
+  label.append(
+    input,
+    document.createTextNode(
+      text
+    )
+  );
+
+  return {
+    label,
+    input
+  };
+};
+
+const contactMedicalField =
+  createContactEditCheckbox(
+    "Authorized for Medical Decisions",
+    Number(
+      contact
+        .authorized_for_medical_decisions
+    ) === 1
+  );
+
+const contactPickupField =
+  createContactEditCheckbox(
+    "Authorized for Pickup",
+    Number(
+      contact
+        .authorized_for_pickup
+    ) === 1
+  );
+
+contactOptions.append(
+  contactMedicalField.label,
+  contactPickupField.label
+);
+
+contactEditForm.append(
+  contactOptions
+);
+
+const contactNotesLabel =
+  element(
+    "label",
+    "emergency-notes-label"
+  );
+
+contactNotesLabel.append(
+  document.createTextNode(
+    "Notes"
+  )
+);
+
+const contactNotesField =
+  document.createElement(
+    "textarea"
+  );
+
+contactNotesField.rows = 4;
+contactNotesField.maxLength = 1000;
+contactNotesField.value =
+  contact.notes || "";
+
+contactNotesLabel.append(
+  contactNotesField
+);
+
+contactEditForm.append(
+  contactNotesLabel
+);
+
+const contactSaveButton =
+  element(
+    "button",
+    "portal-button",
+    "Save Changes"
+  );
+
+contactSaveButton.type =
+  "submit";
+
+const contactEditMessage =
+  element(
+    "p",
+    "portal-message"
+  );
+
+contactEditMessage.setAttribute(
+  "aria-live",
+  "polite"
+);
+
+contactEditForm.append(
+  contactSaveButton,
+  contactEditMessage
+);
+
+card.append(
+  contactEditForm
+);
+
+editButton.addEventListener(
+  "click",
+  () => {
+    contactEditForm.hidden =
+      !contactEditForm.hidden;
+
+    editButton.textContent =
+      contactEditForm.hidden
+        ? "Edit"
+        : "Cancel";
+  }
+);
       return card;
     });
 
