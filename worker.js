@@ -3894,6 +3894,454 @@ LIMIT 1
   }
 }
     /*
+ * ============================================================
+ * AUTHENTICATED ADD PET ENDPOINT
+ * Creates a new pet for the signed-in customer's household.
+ * ============================================================
+ */
+if (
+  url.pathname === "/api/account/pets" &&
+  request.method === "POST"
+) {
+
+  /*
+   * ----------------------------------------------------------
+   * PET AUTHENTICATION
+   * ----------------------------------------------------------
+   */
+  const rawSession =
+    getCookieValue(
+      request,
+      "__Host-npc_session"
+    );
+
+  if (!rawSession) {
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Authentication required."
+      },
+      401
+    );
+  }
+
+  try {
+
+    /*
+     * --------------------------------------------------------
+     * READ PET FORM DATA
+     * --------------------------------------------------------
+     */
+    const body =
+      await request.json();
+
+
+    /*
+     * --------------------------------------------------------
+     * BASIC PET INFORMATION
+     * --------------------------------------------------------
+     */
+    const name =
+      typeof body.name === "string"
+        ? body.name
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 100)
+        : "";
+
+    const species =
+      typeof body.species === "string"
+        ? body.species
+            .trim()
+            .toLowerCase()
+            .slice(0, 50)
+        : "";
+
+    const breed =
+      typeof body.breed === "string"
+        ? body.breed
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 200)
+        : "";
+
+    const colorMarkings =
+      typeof body.colorMarkings === "string"
+        ? body.colorMarkings
+            .trim()
+            .slice(0, 200)
+        : "";
+
+
+    /*
+     * --------------------------------------------------------
+     * PET BIRTH INFORMATION
+     * --------------------------------------------------------
+     */
+    const dateOfBirth =
+      typeof body.dateOfBirth === "string"
+        ? body.dateOfBirth
+            .trim()
+            .slice(0, 10)
+        : "";
+
+    const approximateBirthDate =
+      body.approximateBirthDate === true
+        ? 1
+        : 0;
+
+
+    /*
+     * --------------------------------------------------------
+     * PET SEX AND PHYSICAL INFORMATION
+     * --------------------------------------------------------
+     */
+    const sex =
+      typeof body.sex === "string"
+        ? body.sex
+            .trim()
+            .toLowerCase()
+            .slice(0, 30)
+        : "";
+
+    const spayedNeutered =
+      body.spayedNeutered === true
+        ? 1
+        : body.spayedNeutered === false
+          ? 0
+          : null;
+
+    const weightNumber =
+      Number(body.weightLbs);
+
+    const weightLbs =
+      Number.isFinite(weightNumber) &&
+      weightNumber > 0 &&
+      weightNumber <= 500
+        ? weightNumber
+        : null;
+
+    const microchipNumber =
+      typeof body.microchipNumber === "string"
+        ? body.microchipNumber
+            .trim()
+            .slice(0, 100)
+        : "";
+
+
+    /*
+     * --------------------------------------------------------
+     * PET CARE INFORMATION
+     * --------------------------------------------------------
+     */
+    const feedingNotes =
+      typeof body.feedingNotes === "string"
+        ? body.feedingNotes
+            .trim()
+            .slice(0, 2000)
+        : "";
+
+    const medicationNotes =
+      typeof body.medicationNotes === "string"
+        ? body.medicationNotes
+            .trim()
+            .slice(0, 2000)
+        : "";
+
+    const medicalNotes =
+      typeof body.medicalNotes === "string"
+        ? body.medicalNotes
+            .trim()
+            .slice(0, 2000)
+        : "";
+
+    const behaviorNotes =
+      typeof body.behaviorNotes === "string"
+        ? body.behaviorNotes
+            .trim()
+            .slice(0, 2000)
+        : "";
+
+    const routineNotes =
+      typeof body.routineNotes === "string"
+        ? body.routineNotes
+            .trim()
+            .slice(0, 2000)
+        : "";
+
+    const allergyNotes =
+      typeof body.allergyNotes === "string"
+        ? body.allergyNotes
+            .trim()
+            .slice(0, 2000)
+        : "";
+
+
+    /*
+     * --------------------------------------------------------
+     * PET TRAINING INFORMATION
+     * --------------------------------------------------------
+     */
+    const houseTrained =
+      body.houseTrained === true
+        ? 1
+        : body.houseTrained === false
+          ? 0
+          : null;
+
+    const crateTrained =
+      body.crateTrained === true
+        ? 1
+        : body.crateTrained === false
+          ? 0
+          : null;
+
+
+    /*
+     * --------------------------------------------------------
+     * PET COMPATIBILITY INFORMATION
+     * --------------------------------------------------------
+     */
+    const dogFriendly =
+      typeof body.dogFriendly === "string"
+        ? body.dogFriendly
+            .trim()
+            .toLowerCase()
+            .slice(0, 50)
+        : "";
+
+    const catFriendly =
+      typeof body.catFriendly === "string"
+        ? body.catFriendly
+            .trim()
+            .toLowerCase()
+            .slice(0, 50)
+        : "";
+
+    const childFriendly =
+      typeof body.childFriendly === "string"
+        ? body.childFriendly
+            .trim()
+            .toLowerCase()
+            .slice(0, 50)
+        : "";
+
+
+    /*
+     * --------------------------------------------------------
+     * VALIDATE REQUIRED PET INFORMATION
+     * --------------------------------------------------------
+     */
+    if (!name) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Enter your pet's name."
+        },
+        400
+      );
+    }
+
+    if (!species) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "Choose your pet's species."
+        },
+        400
+      );
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * IDENTIFY THE SIGNED-IN HOUSEHOLD
+     * Household ID never comes from the customer's form.
+     * --------------------------------------------------------
+     */
+    const sessionHash =
+      await sha256Hex(rawSession);
+
+    const account =
+      await env.DB
+        .prepare(`
+          SELECT
+            ca.household_id
+
+          FROM customer_sessions cs
+
+          JOIN customer_accounts ca
+            ON ca.id = cs.account_id
+
+          WHERE cs.session_hash = ?1
+            AND cs.revoked_at IS NULL
+            AND cs.expires_at >
+              CURRENT_TIMESTAMP
+            AND ca.status = 'active'
+
+          LIMIT 1
+        `)
+        .bind(sessionHash)
+        .first();
+
+    if (!account) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            "The customer session is invalid or expired."
+        },
+        401
+      );
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * CREATE UNIQUE PET NUMBER
+     * --------------------------------------------------------
+     */
+    const identifier =
+      crypto
+        .randomUUID()
+        .replaceAll("-", "")
+        .slice(0, 12)
+        .toUpperCase();
+
+    const petNumber =
+      `PET-${identifier}`;
+
+
+    /*
+     * --------------------------------------------------------
+     * SAVE PET TO D1
+     * Review and approval fields use the database defaults.
+     * --------------------------------------------------------
+     */
+    const insertResult =
+      await env.DB
+        .prepare(`
+          INSERT INTO pets (
+            household_id,
+            pet_number,
+            name,
+            species,
+            breed,
+            color_markings,
+            date_of_birth,
+            approximate_birth_date,
+            sex,
+            spayed_neutered,
+            weight_lbs,
+            microchip_number,
+            feeding_notes,
+            medication_notes,
+            medical_notes,
+            behavior_notes,
+            routine_notes,
+            allergy_notes,
+            house_trained,
+            crate_trained,
+            dog_friendly,
+            cat_friendly,
+            child_friendly
+          )
+          VALUES (
+            ?1,
+            ?2,
+            ?3,
+            ?4,
+            ?5,
+            ?6,
+            ?7,
+            ?8,
+            ?9,
+            ?10,
+            ?11,
+            ?12,
+            ?13,
+            ?14,
+            ?15,
+            ?16,
+            ?17,
+            ?18,
+            ?19,
+            ?20,
+            ?21,
+            ?22,
+            ?23
+          )
+        `)
+        .bind(
+          account.household_id,
+          petNumber,
+          name,
+          species,
+          breed || null,
+          colorMarkings || null,
+          dateOfBirth || null,
+          approximateBirthDate,
+          sex || null,
+          spayedNeutered,
+          weightLbs,
+          microchipNumber || null,
+          feedingNotes || null,
+          medicationNotes || null,
+          medicalNotes || null,
+          behaviorNotes || null,
+          routineNotes || null,
+          allergyNotes || null,
+          houseTrained,
+          crateTrained,
+          dogFriendly || null,
+          catFriendly || null,
+          childFriendly || null
+        )
+        .run();
+
+
+    /*
+     * --------------------------------------------------------
+     * ADD PET SUCCESS RESPONSE
+     * --------------------------------------------------------
+     */
+    return jsonResponse(
+      {
+        ok: true,
+
+        petId:
+          insertResult?.meta
+            ?.last_row_id || null,
+
+        petNumber,
+
+        message:
+          "Pet added."
+      },
+      201
+    );
+
+  } catch (error) {
+
+    /*
+     * --------------------------------------------------------
+     * ADD PET ERROR RESPONSE
+     * --------------------------------------------------------
+     */
+    return jsonResponse(
+      {
+        ok: false,
+        error:
+          "Unable to add the pet right now."
+      },
+      500
+    );
+  }
+}
+    /*
  * Public customer sign-in and account creation page.
  */
 if (
