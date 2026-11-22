@@ -7064,7 +7064,120 @@ contactEditForm.append(
   contactSaveButton,
   contactEditMessage
 );
+const contactRemoveButton =
+  element(
+    "button",
+    "danger-button",
+    "Remove from Household"
+  );
 
+contactRemoveButton.type =
+  "button";
+
+contactEditForm.append(
+  contactRemoveButton
+);
+
+contactRemoveButton.addEventListener(
+  "click",
+  async () => {
+    const confirmed =
+      window.confirm(
+        "Remove this emergency contact from the active household? The historical record will be kept."
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    contactRemoveButton.disabled =
+      true;
+
+    contactRemoveButton.textContent =
+      "Removing...";
+
+    contactEditMessage.className =
+      "portal-message";
+
+    contactEditMessage.textContent =
+      "Removing emergency contact...";
+
+    try {
+      const response =
+        await fetch(
+          "/api/account/emergency-contacts/" +
+            encodeURIComponent(
+              contact.id
+            ),
+          {
+            method: "DELETE",
+
+            credentials:
+              "same-origin"
+          }
+        );
+
+      const responseText =
+        await response.text();
+
+      let result = null;
+
+      try {
+        result =
+          responseText
+            ? JSON.parse(responseText)
+            : null;
+      } catch {
+        result = null;
+      }
+
+      if (!result) {
+        throw new Error(
+          "Invalid server response. HTTP " +
+            response.status
+        );
+      }
+
+      if (
+        !response.ok ||
+        !result.ok
+      ) {
+        throw new Error(
+          result.error ||
+          "Unable to remove the emergency contact."
+        );
+      }
+
+      contactEditMessage.className =
+        "portal-message success";
+
+      contactEditMessage.textContent =
+        "Emergency contact removed from the active household.";
+
+      await loadAccountDetails();
+
+      window.setTimeout(
+        () => {
+          window.location.reload();
+        },
+        700
+      );
+
+    } catch (error) {
+      contactEditMessage.className =
+        "portal-message error";
+
+      contactEditMessage.textContent =
+        error.message;
+
+      contactRemoveButton.disabled =
+        false;
+
+      contactRemoveButton.textContent =
+        "Remove from Household";
+    }
+  }
+);
 card.append(
   contactEditForm
 );
