@@ -6780,6 +6780,361 @@ WHERE household_id = ?1
 </section>
           </main>
 <script>
+/*
+ * ============================================================
+ * PET BREED AND MIX SUGGESTIONS
+ * Suggestions for the customer Add Pet form.
+ * Custom Breed / Mix text remains allowed.
+ * ============================================================
+ */
+
+const dogBreedSuggestions = [
+  "Mixed Breed",
+  "Unknown",
+  "Affenpinscher",
+  "Afghan Hound",
+  "Airedale Terrier",
+  "Akita",
+  "Alaskan Klee Kai",
+  "Alaskan Malamute",
+  "American Bulldog",
+  "American Bully",
+  "American English Coonhound",
+  "American Eskimo Dog",
+  "American Foxhound",
+  "American Hairless Terrier",
+  "American Leopard Hound",
+  "American Pit Bull Terrier",
+  "American Staffordshire Terrier",
+  "American Water Spaniel",
+  "Anatolian Shepherd Dog",
+  "Australian Cattle Dog",
+  "Australian Kelpie",
+  "Australian Shepherd",
+  "Australian Terrier",
+  "Basenji",
+  "Basset Hound",
+  "Beagle",
+  "Bearded Collie",
+  "Beauceron",
+  "Bedlington Terrier",
+  "Belgian Laekenois",
+  "Belgian Malinois",
+  "Belgian Sheepdog",
+  "Belgian Tervuren",
+  "Bernese Mountain Dog",
+  "Bichon Frise",
+  "Black and Tan Coonhound",
+  "Black Russian Terrier",
+  "Bloodhound",
+  "Bluetick Coonhound",
+  "Boerboel",
+  "Bolognese",
+  "Border Collie",
+  "Border Terrier",
+  "Borzoi",
+  "Boston Terrier",
+  "Bouvier des Flandres",
+  "Boxer",
+  "Boykin Spaniel",
+  "Bracco Italiano",
+  "Brittany",
+  "Brussels Griffon",
+  "Bull Terrier",
+  "Bulldog",
+  "Bullmastiff",
+  "Cairn Terrier",
+  "Cane Corso",
+  "Cardigan Welsh Corgi",
+  "Catahoula Leopard Dog",
+  "Cavalier King Charles Spaniel",
+  "Chesapeake Bay Retriever",
+  "Chihuahua",
+  "Chinese Crested",
+  "Chinese Shar-Pei",
+  "Chinook",
+  "Chow Chow",
+  "Clumber Spaniel",
+  "Cocker Spaniel",
+  "Collie",
+  "Coton de Tulear",
+  "Dachshund",
+  "Dalmatian",
+  "Doberman Pinscher",
+  "Dogo Argentino",
+  "Dutch Shepherd",
+  "English Cocker Spaniel",
+  "English Foxhound",
+  "English Setter",
+  "English Springer Spaniel",
+  "English Toy Spaniel",
+  "Entlebucher Mountain Dog",
+  "Finnish Lapphund",
+  "Finnish Spitz",
+  "Flat-Coated Retriever",
+  "French Bulldog",
+  "German Pinscher",
+  "German Shepherd Dog",
+  "German Shorthaired Pointer",
+  "German Wirehaired Pointer",
+  "Giant Schnauzer",
+  "Glen of Imaal Terrier",
+  "Golden Retriever",
+  "Gordon Setter",
+  "Great Dane",
+  "Great Pyrenees",
+  "Greater Swiss Mountain Dog",
+  "Greyhound",
+  "Havanese",
+  "Ibizan Hound",
+  "Icelandic Sheepdog",
+  "Irish Setter",
+  "Irish Terrier",
+  "Irish Water Spaniel",
+  "Irish Wolfhound",
+  "Italian Greyhound",
+  "Jack Russell Terrier",
+  "Japanese Chin",
+  "Keeshond",
+  "Komondor",
+  "Kuvasz",
+  "Labrador Retriever",
+  "Lagotto Romagnolo",
+  "Lakeland Terrier",
+  "Leonberger",
+  "Lhasa Apso",
+  "Maltese",
+  "Manchester Terrier",
+  "Mastiff",
+  "Miniature American Shepherd",
+  "Miniature Pinscher",
+  "Miniature Schnauzer",
+  "Neapolitan Mastiff",
+  "Newfoundland",
+  "Norfolk Terrier",
+  "Norwegian Elkhound",
+  "Norwich Terrier",
+  "Nova Scotia Duck Tolling Retriever",
+  "Old English Sheepdog",
+  "Papillon",
+  "Pekingese",
+  "Pembroke Welsh Corgi",
+  "Pharaoh Hound",
+  "Plott Hound",
+  "Pointer",
+  "Pomeranian",
+  "Poodle",
+  "Portuguese Water Dog",
+  "Pug",
+  "Rat Terrier",
+  "Redbone Coonhound",
+  "Rhodesian Ridgeback",
+  "Rottweiler",
+  "Saint Bernard",
+  "Saluki",
+  "Samoyed",
+  "Schipperke",
+  "Scottish Terrier",
+  "Shetland Sheepdog",
+  "Shiba Inu",
+  "Shih Tzu",
+  "Siberian Husky",
+  "Soft Coated Wheaten Terrier",
+  "Staffordshire Bull Terrier",
+  "Standard Schnauzer",
+  "Tibetan Mastiff",
+  "Tibetan Spaniel",
+  "Tibetan Terrier",
+  "Toy Fox Terrier",
+  "Treeing Walker Coonhound",
+  "Vizsla",
+  "Weimaraner",
+  "Welsh Terrier",
+  "West Highland White Terrier",
+  "Whippet",
+  "Wire Fox Terrier",
+  "Yorkshire Terrier"
+];
+
+
+/*
+ * ============================================================
+ * COMMON NAMED DOG CROSSBREEDS AND MIXES
+ * These remain Breed / Mix descriptions, not approval labels.
+ * ============================================================
+ */
+
+const dogMixSuggestions = [
+  "Bernedoodle",
+  "Boxador",
+  "Cavapoo",
+  "Chiweenie",
+  "Cockapoo",
+  "Goldendoodle",
+  "Labradoodle",
+  "Maltipoo",
+  "Pomsky",
+  "Puggle",
+  "Schnoodle",
+  "Sheepadoodle",
+  "Yorkiepoo",
+  "Doodle Mix",
+  "Hound Mix",
+  "Pit Bull-type Mix",
+  "Retriever Mix",
+  "Shepherd Mix",
+  "Terrier Mix"
+];
+
+
+/*
+ * ============================================================
+ * CAT BREED SUGGESTIONS
+ * Includes common domestic coat categories and Unknown.
+ * ============================================================
+ */
+
+const catBreedSuggestions = [
+  "Mixed Breed",
+  "Unknown",
+  "Domestic Shorthair",
+  "Domestic Medium Hair",
+  "Domestic Longhair",
+  "Abyssinian",
+  "American Bobtail",
+  "American Curl",
+  "American Shorthair",
+  "Balinese",
+  "Bengal",
+  "Birman",
+  "Bombay",
+  "British Shorthair",
+  "Burmese",
+  "Chartreux",
+  "Cornish Rex",
+  "Devon Rex",
+  "Egyptian Mau",
+  "Exotic Shorthair",
+  "Havana Brown",
+  "Japanese Bobtail",
+  "Korat",
+  "LaPerm",
+  "Maine Coon",
+  "Manx",
+  "Norwegian Forest Cat",
+  "Ocicat",
+  "Oriental Shorthair",
+  "Persian",
+  "Ragdoll",
+  "Russian Blue",
+  "Scottish Fold",
+  "Selkirk Rex",
+  "Siamese",
+  "Siberian",
+  "Singapura",
+  "Somali",
+  "Sphynx",
+  "Tonkinese",
+  "Turkish Angora",
+  "Turkish Van"
+];
+
+/*
+ * ============================================================
+ * UPDATE BREED SUGGESTIONS BY SPECIES
+ * Dog shows dog breeds and known mixes.
+ * Cat shows cat breed suggestions.
+ * Other allows custom Breed / Mix text only.
+ * ============================================================
+ */
+
+function updatePetBreedSuggestions() {
+  const speciesField =
+    document.querySelector(
+      "#pet-species"
+    );
+
+  const breedField =
+    document.querySelector(
+      "#pet-breed"
+    );
+
+  const suggestionList =
+    document.querySelector(
+      "#pet-breed-suggestions"
+    );
+
+  if (
+    !speciesField ||
+    !breedField ||
+    !suggestionList
+  ) {
+    return;
+  }
+
+  suggestionList.replaceChildren();
+
+  let suggestions = [];
+
+  if (speciesField.value === "dog") {
+    suggestions = [
+      ...dogBreedSuggestions,
+      ...dogMixSuggestions
+    ];
+
+    breedField.placeholder =
+      "Type or select a dog breed or mix";
+
+  } else if (
+    speciesField.value === "cat"
+  ) {
+    suggestions =
+      catBreedSuggestions;
+
+    breedField.placeholder =
+      "Type or select a cat breed or mix";
+
+  } else {
+    breedField.placeholder =
+      "Enter breed, mix, or description";
+  }
+
+  for (
+    const breedName of suggestions
+  ) {
+    const option =
+      document.createElement(
+        "option"
+      );
+
+    option.value =
+      breedName;
+
+    suggestionList.append(
+      option
+    );
+  }
+}
+/*
+ * ============================================================
+ * PET SPECIES BREED LIST EVENT
+ * ============================================================
+ */
+
+const petSpeciesField =
+  document.querySelector(
+    "#pet-species"
+  );
+
+petSpeciesField?.addEventListener(
+  "change",
+  () => {
+    updatePetBreedSuggestions();
+  }
+);
+
+updatePetBreedSuggestions();
+
   const portalText = (value, fallback = "Not provided") => {
     if (
       value === null ||
