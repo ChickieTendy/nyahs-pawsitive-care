@@ -6924,6 +6924,166 @@ editButton.addEventListener(
         : "Cancel";
   }
 );
+
+contactEditForm.addEventListener(
+  "submit",
+  async (event) => {
+    event.preventDefault();
+
+    const payload = {
+      fullName:
+        contactNameField.input
+          .value.trim(),
+
+      relationship:
+        contactRelationshipField.input
+          .value.trim(),
+
+      primaryPhone:
+        contactPrimaryPhoneField.input
+          .value.trim(),
+
+      alternatePhone:
+        contactAlternatePhoneField.input
+          .value.trim(),
+
+      email:
+        contactEmailField.input
+          .value
+          .trim()
+          .toLowerCase(),
+
+      priority:
+        Number(
+          contactPriorityField.input
+            .value || 1
+        ),
+
+      authorizedForMedicalDecisions:
+        contactMedicalField.input
+          .checked,
+
+      authorizedForPickup:
+        contactPickupField.input
+          .checked,
+
+      notes:
+        contactNotesField
+          .value.trim()
+    };
+
+    if (
+      !payload.fullName ||
+      !payload.primaryPhone
+    ) {
+      contactEditMessage.className =
+        "portal-message error";
+
+      contactEditMessage.textContent =
+        "Enter the contact’s full name and primary phone number.";
+
+      return;
+    }
+
+    contactSaveButton.disabled =
+      true;
+
+    contactSaveButton.textContent =
+      "Saving...";
+
+    contactEditMessage.className =
+      "portal-message";
+
+    contactEditMessage.textContent =
+      "Saving changes...";
+
+    try {
+      const response =
+        await fetch(
+          "/api/account/emergency-contacts/" +
+            encodeURIComponent(
+              contact.id
+            ),
+          {
+            method: "PUT",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            credentials:
+              "same-origin",
+
+            body:
+              JSON.stringify(
+                payload
+              )
+          }
+        );
+
+      const responseText =
+        await response.text();
+
+      let result = null;
+
+      try {
+        result =
+          responseText
+            ? JSON.parse(responseText)
+            : null;
+      } catch {
+        result = null;
+      }
+
+      if (!result) {
+        throw new Error(
+          "Invalid server response. HTTP " +
+            response.status
+        );
+      }
+
+      if (
+        !response.ok ||
+        !result.ok
+      ) {
+        throw new Error(
+          result.error ||
+          "Unable to update the emergency contact."
+        );
+      }
+
+      contactEditMessage.className =
+        "portal-message success";
+
+      contactEditMessage.textContent =
+        "Emergency contact updated.";
+
+      await loadAccountDetails();
+
+      window.setTimeout(
+        () => {
+          window.location.reload();
+        },
+        700
+      );
+
+    } catch (error) {
+      contactEditMessage.className =
+        "portal-message error";
+
+      contactEditMessage.textContent =
+        error.message;
+
+      contactSaveButton.disabled =
+        false;
+
+      contactSaveButton.textContent =
+        "Save Changes";
+    }
+  }
+);
+
       return card;
     });
 
